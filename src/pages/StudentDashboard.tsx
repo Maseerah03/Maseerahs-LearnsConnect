@@ -77,6 +77,7 @@ import {
   Phone,
   Mail,
   RefreshCw,
+  X,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -288,16 +289,59 @@ function ContactInstitutions() {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [selectedInstitution, setSelectedInstitution] = useState<InstitutionProfile | null>(null);
+  const [contactForm, setContactForm] = useState({
+    student_name: '',
+    student_email: '',
+    course_interest: '',
+    message: ''
+  });
+
   const handleContactInstitution = (institution: InstitutionProfile) => {
-    // Create a mailto link with pre-filled information
-    const subject = encodeURIComponent(`Inquiry about ${institution.institution_name}`);
-    const body = encodeURIComponent(`Hello,\n\nI am interested in learning more about your institution and the programs you offer.\n\nPlease provide me with more information about:\n- Available courses/programs\n- Admission requirements\n- Fee structure\n- Class schedules\n\nThank you for your time.\n\nBest regards`);
-    
-    if (institution.official_email) {
-      window.open(`mailto:${institution.official_email}?subject=${subject}&body=${body}`);
-    } else {
-      // Fallback to showing contact information
-      alert(`Contact Information:\nInstitution: ${institution.institution_name}\nPhone: ${institution.primary_contact || 'Not provided'}\nEmail: ${institution.official_email || 'Not provided'}`);
+    setSelectedInstitution(institution);
+    setContactForm({
+      student_name: '',
+      student_email: '',
+      course_interest: '',
+      message: ''
+    });
+    setShowContactForm(true);
+  };
+
+  const handleSubmitInquiry = async () => {
+    if (!selectedInstitution) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('institution_student_enquiries')
+        .insert({
+          institution_id: selectedInstitution.user_id,
+          student_name: contactForm.student_name,
+          student_email: contactForm.student_email,
+          course_interest: contactForm.course_interest,
+          message: contactForm.message,
+          status: 'new'
+        });
+
+      if (error) {
+        console.error('Error submitting inquiry:', error);
+        alert('Failed to submit inquiry. Please try again.');
+        return;
+      }
+
+      alert('Your inquiry has been submitted successfully! The institution will contact you soon.');
+      setShowContactForm(false);
+      setSelectedInstitution(null);
+      setContactForm({
+        student_name: '',
+        student_email: '',
+        course_interest: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Error submitting inquiry:', error);
+      alert('Failed to submit inquiry. Please try again.');
     }
   };
 
@@ -502,6 +546,116 @@ function ContactInstitutions() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Contact Form Modal */}
+      {showContactForm && selectedInstitution && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Contact {selectedInstitution.institution_name}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Send an inquiry to this institution
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowContactForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Form */}
+              <div className="space-y-4">
+                {/* Student Name */}
+                <div>
+                  <label htmlFor="student_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name *
+                  </label>
+                  <Input
+                    id="student_name"
+                    type="text"
+                    value={contactForm.student_name}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, student_name: e.target.value }))}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+
+                {/* Student Email */}
+                <div>
+                  <label htmlFor="student_email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Email
+                  </label>
+                  <Input
+                    id="student_email"
+                    type="email"
+                    value={contactForm.student_email}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, student_email: e.target.value }))}
+                    placeholder="Enter your email address"
+                  />
+                </div>
+
+                {/* Course Interest */}
+                <div>
+                  <label htmlFor="course_interest" className="block text-sm font-medium text-gray-700 mb-1">
+                    Course/Program Interest *
+                  </label>
+                  <Input
+                    id="course_interest"
+                    type="text"
+                    value={contactForm.course_interest}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, course_interest: e.target.value }))}
+                    placeholder="e.g., Computer Science, Business Administration"
+                    required
+                  />
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    id="message"
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                    placeholder="Tell us more about your interest, questions, or requirements..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    rows={4}
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowContactForm(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitInquiry}
+                  disabled={!contactForm.student_name || !contactForm.course_interest}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Inquiry
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
