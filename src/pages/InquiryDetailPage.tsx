@@ -177,14 +177,14 @@ export default function InquiryDetailPage() {
     {
       id: '1',
       name: 'Course Information',
-      subject: 'Data Science Course Details - EduXperience',
+      subject: 'Data Science Course Details - LearnsConnect',
       content: 'Dear [Student Name],\n\nThank you for your interest in our Data Science course...',
       type: 'email'
     },
     {
       id: '2',
       name: 'Campus Visit Invitation',
-      subject: 'Campus Visit Invitation - EduXperience',
+      subject: 'Campus Visit Invitation - LearnsConnect',
       content: 'Dear [Student Name],\n\nWe would like to invite you for a campus visit...',
       type: 'email'
     },
@@ -192,7 +192,7 @@ export default function InquiryDetailPage() {
       id: '3',
       name: 'Follow-up Call Script',
       subject: 'Follow-up Call Script',
-      content: 'Hello [Student Name], this is [Your Name] from EduXperience...',
+      content: 'Hello [Student Name], this is [Your Name] from LearnsConnect...',
       type: 'call_script'
     }
   ]);

@@ -1,6 +1,6 @@
 # Dynamic Landing Page Statistics
 
-This document explains how the EduXperience landing page now displays real-time statistics fetched from the database instead of static placeholder values.
+This document explains how the LearnsConnect landing page now displays real-time statistics fetched from the database instead of static placeholder values.
 
 ## Overview
 

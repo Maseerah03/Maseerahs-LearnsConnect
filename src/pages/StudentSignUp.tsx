@@ -255,7 +255,7 @@ export default function StudentSignUp() {
                 Join as a Student
               </CardTitle>
               <CardDescription className="text-lg">
-                Start your learning journey with EduXperience
+                Start your learning journey with LearnsConnect
               </CardDescription>
             </CardHeader>
             

@@ -760,7 +760,7 @@ export default function SignUp() {
             <div>
               <h4 className="font-medium mb-2">Almost Done!</h4>
               <p className="text-sm text-muted-foreground">
-                You're about to join thousands of learners who are achieving their goals with EduXperience. 
+                You're about to join thousands of learners who are achieving their goals with LearnsConnect. 
                 After submission, you'll receive an email to verify your account.
               </p>
             </div>

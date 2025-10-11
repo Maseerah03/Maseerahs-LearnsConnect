@@ -1,7 +1,7 @@
 # Analytics Dashboard Guide for Admins
 
 ## Overview
-This guide provides comprehensive instructions for using the Analytics Dashboard to monitor platform performance, track user growth, analyze revenue trends, and make data-driven decisions on the EduXperience platform.
+This guide provides comprehensive instructions for using the Analytics Dashboard to monitor platform performance, track user growth, analyze revenue trends, and make data-driven decisions on the LearnsConnect platform.
 
 ## Analytics Dashboard Principles
 
@@ -339,7 +339,7 @@ The bottom section shows daily trends for the last 7 days:
 
 ## Conclusion
 
-The Analytics Dashboard is a powerful tool for monitoring platform performance and making informed decisions. By regularly reviewing metrics, analyzing trends, and taking action based on insights, you can drive continuous improvement and growth for the EduXperience platform.
+The Analytics Dashboard is a powerful tool for monitoring platform performance and making informed decisions. By regularly reviewing metrics, analyzing trends, and taking action based on insights, you can drive continuous improvement and growth for the LearnsConnect platform.
 
 Remember: Analytics are only valuable when they lead to action. Use the dashboard to identify opportunities, address challenges, and optimize platform performance for the benefit of all users.
 

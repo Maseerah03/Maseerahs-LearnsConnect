@@ -1,4 +1,4 @@
-# EduXperience Dashboard Features
+# LearnsConnect Dashboard Features
 
 ## Student Dashboard (`/dashboard/student`)
 

@@ -1,4 +1,4 @@
-# EduXperience Admin Panel
+# LearnsConnect Admin Panel
 
 ## Overview
 The Admin Panel provides secure administrative access to manage user verifications and content moderation across the platform.
@@ -6,7 +6,7 @@ The Admin Panel provides secure administrative access to manage user verificatio
 ## Access
 - **URL**: `/admin/login`
 - **Username**: `admin`
-- **Password**: `EduXperience2024!`
+- **Password**: `LearnsConnect2024!`
 
 ## Features
 

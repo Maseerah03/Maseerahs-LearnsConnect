@@ -324,9 +324,9 @@ export default function Login() {
             console.log('✅ saveCredentials function completed successfully');
             
             // Immediately verify what was saved
-            const verifyRememberMe = localStorage.getItem('eduxperience_remember_me');
-            const verifyEmail = localStorage.getItem('eduxperience_saved_email');
-            const verifyPassword = localStorage.getItem('eduxperience_saved_password');
+            const verifyRememberMe = localStorage.getItem('learnsconnect_remember_me');
+            const verifyEmail = localStorage.getItem('learnsconnect_saved_email');
+            const verifyPassword = localStorage.getItem('learnsconnect_saved_password');
             
             console.log('=== IMMEDIATE VERIFICATION ===');
             console.log('- REMEMBER_ME_KEY:', verifyRememberMe);
@@ -352,7 +352,7 @@ export default function Login() {
 
         toast({
           title: "Login Successful!",
-          description: "Welcome back to EduXperience.",
+          description: "Welcome back to LearnsConnect.",
         });
 
         // Add a delay to ensure credentials are saved before any redirect
@@ -409,7 +409,7 @@ export default function Login() {
         
         // Check credentials before profile fetch
         console.log('=== CHECKING CREDENTIALS BEFORE PROFILE FETCH ===');
-        const beforeProfileCheck = localStorage.getItem('eduxperience_remember_me');
+        const beforeProfileCheck = localStorage.getItem('learnsconnect_remember_me');
         console.log('Credentials before profile fetch:', beforeProfileCheck ? 'EXIST' : 'NOT FOUND');
         
 
@@ -426,14 +426,14 @@ export default function Login() {
           // If profile doesn't exist, redirect to home page
           console.log('Redirecting to home page due to profile error...');
           console.log('=== FINAL CREDENTIAL CHECK BEFORE REDIRECT ===');
-          const finalCheck = localStorage.getItem('eduxperience_remember_me');
+          const finalCheck = localStorage.getItem('learnsconnect_remember_me');
           console.log('Final credentials check:', finalCheck ? 'EXIST' : 'NOT FOUND');
           window.location.href = '/';
         } else if (profileData) {
           // Redirect based on user role
           console.log('Redirecting based on user role:', profileData.role);
           console.log('=== FINAL CREDENTIAL CHECK BEFORE REDIRECT ===');
-          const finalCheck = localStorage.getItem('eduxperience_remember_me');
+          const finalCheck = localStorage.getItem('learnsconnect_remember_me');
           console.log('Final credentials check:', finalCheck ? 'EXIST' : 'NOT FOUND');
           
           switch (profileData.role) {
@@ -457,7 +457,7 @@ export default function Login() {
           // No profile found, redirect to home page
           console.log('No profile found, redirecting to home page...');
           console.log('=== FINAL CREDENTIAL CHECK BEFORE REDIRECT ===');
-          const finalCheck = localStorage.getItem('eduxperience_remember_me');
+          const finalCheck = localStorage.getItem('learnsconnect_remember_me');
           console.log('Final credentials check:', finalCheck ? 'EXIST' : 'NOT FOUND');
           window.location.href = '/';
         }
@@ -492,7 +492,7 @@ export default function Login() {
             <CardHeader className="space-y-4 text-center">
               <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
               <CardDescription className="text-base">
-                Sign in to your EduXperience account to continue your learning journey
+                Sign in to your LearnsConnect account to continue your learning journey
               </CardDescription>
             </CardHeader>
 

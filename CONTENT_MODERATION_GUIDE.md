@@ -1,7 +1,7 @@
 # Content Moderation Guide for Admins
 
 ## Overview
-This guide provides comprehensive instructions for moderating content on the EduXperience platform, ensuring quality and appropriateness across all user-generated content.
+This guide provides comprehensive instructions for moderating content on the LearnsConnect platform, ensuring quality and appropriateness across all user-generated content.
 
 ## Content Moderation Principles
 
@@ -243,7 +243,7 @@ This guide provides comprehensive instructions for moderating content on the Edu
 
 ## Conclusion
 
-Content moderation is a crucial responsibility that helps maintain the quality and safety of the EduXperience platform. By following these guidelines and maintaining consistent standards, you'll help create a positive learning environment for all users.
+Content moderation is a crucial responsibility that helps maintain the quality and safety of the LearnsConnect platform. By following these guidelines and maintaining consistent standards, you'll help create a positive learning environment for all users.
 
 Remember: When in doubt, prioritize safety and quality. It's better to reject questionable content than to approve something that could harm the platform or its users.
 

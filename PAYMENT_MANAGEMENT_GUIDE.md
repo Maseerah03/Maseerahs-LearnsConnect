@@ -1,7 +1,7 @@
 # Payment Management Guide for Admins
 
 ## Overview
-This guide provides comprehensive instructions for managing payments, payouts, refunds, and fees on the EduXperience platform, ensuring financial transparency and proper transaction handling.
+This guide provides comprehensive instructions for managing payments, payouts, refunds, and fees on the LearnsConnect platform, ensuring financial transparency and proper transaction handling.
 
 ## Payment Management Principles
 
@@ -286,7 +286,7 @@ This guide provides comprehensive instructions for managing payments, payouts, r
 
 ## Conclusion
 
-Payment management is a critical responsibility that ensures financial transparency, security, and compliance on the EduXperience platform. By following these guidelines and maintaining proper financial controls, you'll help create a trustworthy financial environment for all users.
+Payment management is a critical responsibility that ensures financial transparency, security, and compliance on the LearnsConnect platform. By following these guidelines and maintaining proper financial controls, you'll help create a trustworthy financial environment for all users.
 
 Remember: When in doubt about financial decisions, prioritize security and compliance. It's better to delay a transaction for verification than to process something that could cause problems later.
 

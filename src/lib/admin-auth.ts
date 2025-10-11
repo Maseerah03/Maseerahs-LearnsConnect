@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 // Admin credentials (in production, these would be stored securely in environment variables)
 const ADMIN_CREDENTIALS = {
   username: 'admin',
-  password: 'EduXperience2024!', // Strong password for admin access
-  email: 'admin@eduxperience.com'
+  password: 'LearnsConnect2024!', // Strong password for admin access
+  email: 'admin@learnsconnect.com'
 };
 
 // Admin session storage key
-const ADMIN_SESSION_KEY = 'eduxperience_admin_session';
+const ADMIN_SESSION_KEY = 'learnsconnect_admin_session';
 
 /**
  * Admin login function

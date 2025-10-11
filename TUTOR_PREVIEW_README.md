@@ -1,6 +1,6 @@
 # Tutor Preview Feature
 
-This document explains the new tutor preview functionality added to the EduXperience landing page.
+This document explains the new tutor preview functionality added to the LearnsConnect landing page.
 
 ## Overview
 

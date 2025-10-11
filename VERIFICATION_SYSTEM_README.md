@@ -1,6 +1,6 @@
 # Tutor & Institute Verification System
 
-A comprehensive verification system for tutors and institutes on the EduXperience platform, built with React, TypeScript, and Supabase.
+A comprehensive verification system for tutors and institutes on the LearnsConnect platform, built with React, TypeScript, and Supabase.
 
 ## 🚀 Features
 
@@ -349,7 +349,7 @@ npm run test:e2e
 
 ## 📄 License
 
-This verification system is part of the EduXperience platform and is licensed under the MIT License.
+This verification system is part of the LearnsConnect platform and is licensed under the MIT License.
 
 ## 🆘 Support
 
@@ -360,4 +360,4 @@ For technical support or questions about the verification system:
 
 ---
 
-**Built with ❤️ for the EduXperience platform**
+**Built with ❤️ for the LearnsConnect platform**

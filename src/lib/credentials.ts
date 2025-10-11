@@ -1,10 +1,10 @@
 // Constants for localStorage keys
-const REMEMBER_ME_KEY = 'eduxperience_remember_me';
-const SAVED_CREDENTIALS_KEY = 'eduxperience_saved_credentials';
-const CREDENTIALS_VERSION = 'eduxperience_credentials_version';
+const REMEMBER_ME_KEY = 'learnsconnect_remember_me';
+const SAVED_CREDENTIALS_KEY = 'learnsconnect_saved_credentials';
+const CREDENTIALS_VERSION = 'learnsconnect_credentials_version';
 
 // Simple encryption key (in production, this would be more sophisticated)
-const ENCRYPTION_KEY = 'eduxperience_secure_key_2024';
+const ENCRYPTION_KEY = 'learnsconnect_secure_key_2024';
 
 /**
  * Check if localStorage is available and working

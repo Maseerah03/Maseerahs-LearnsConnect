@@ -32,7 +32,7 @@ const milestones = [
   {
     year: "2024",
     title: "Platform Launch",
-    description: "EduXperience officially launches, connecting students with tutors and institutions"
+    description: "LearnsConnect officially launches, connecting students with tutors and institutions"
   },
   {
     year: "2024",
@@ -141,7 +141,7 @@ export default function About() {
               Our Core Values
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              The principles that guide everything we do at EduXperience
+              The principles that guide everything we do at LearnsConnect
             </p>
           </div>
 
@@ -257,7 +257,7 @@ export default function About() {
               Our Team & Expertise
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Behind EduXperience is a dedicated team committed to educational excellence
+              Behind LearnsConnect is a dedicated team committed to educational excellence
             </p>
           </div>
 

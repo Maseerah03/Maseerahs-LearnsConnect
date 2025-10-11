@@ -1,8 +1,8 @@
-# Welcome to EduXperience
+# Welcome to LearnsConnect
 
 ## Project info
 
-**EduXperience** - Connect, Learn, Excel
+**LearnsConnect** - Connect, Learn, Excel
 
 A modern platform connecting students with expert tutors and top institutions for personalized learning experiences.
 
@@ -66,7 +66,7 @@ You can deploy this project using various platforms:
 - **Railway**: Easy deployment with automatic scaling
 - **Heroku**: Traditional deployment option
 
-## Can I connect a custom domain to my EduXperience project?
+## Can I connect a custom domain to my LearnsConnect project?
 
 Yes, you can!
 

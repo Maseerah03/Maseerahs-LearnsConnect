@@ -23,7 +23,7 @@ The admin dashboard needs these tables to function:
 ### **Step 1: Access Supabase Dashboard**
 1. Go to [supabase.com](https://supabase.com)
 2. Sign in to your account
-3. Select your EduXperience project
+3. Select your LearnsConnect project
 4. Go to **SQL Editor** in the left sidebar
 
 ### **Step 2: Run the Migration**

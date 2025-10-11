@@ -8,7 +8,7 @@ The admin dashboard is **NOT WORKING** because it's trying to access database ta
 ### **Step 1: Go to Supabase**
 1. Open [supabase.com](https://supabase.com)
 2. Sign in to your account
-3. Select your EduXperience project
+3. Select your LearnsConnect project
 
 ### **Step 2: Run SQL Migration**
 1. Click **SQL Editor** in the left sidebar
@@ -19,7 +19,7 @@ The admin dashboard is **NOT WORKING** because it's trying to access database ta
 
 ### **Step 3: Test Admin Dashboard**
 1. Go back to your admin dashboard: `/admin/login`
-2. Login with: `admin` / `EduXperience2024!`
+2. Login with: `admin` / `LearnsConnect2024!`
 3. Refresh the page
 4. ✅ Should work without errors now!
 

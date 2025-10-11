@@ -1,7 +1,7 @@
 # Course Management Setup Guide
 
 ## Overview
-This guide explains how to set up the course management functionality for tutors in the EduXperience platform.
+This guide explains how to set up the course management functionality for tutors in the LearnsConnect platform.
 
 ## Features Added
 

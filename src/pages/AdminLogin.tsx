@@ -75,7 +75,7 @@ export default function AdminLogin() {
             <Shield className="h-12 w-12 text-blue-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Access</h1>
-          <p className="text-gray-600">Secure administrative panel for EduXperience</p>
+          <p className="text-gray-600">Secure administrative panel for LearnsConnect</p>
         </div>
 
         {/* Login Form */}
@@ -182,7 +182,7 @@ export default function AdminLogin() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-xs text-gray-500">
-            EduXperience Admin Panel • Secure Access Only
+            LearnsConnect Admin Panel • Secure Access Only
           </p>
         </div>
       </div>
