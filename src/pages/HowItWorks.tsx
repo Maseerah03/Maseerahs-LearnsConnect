@@ -109,7 +109,7 @@ export default function HowItWorks() {
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
               How
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                {" "}EduXperience
+                {" "}LearnsConnect
               </span>
               {" "}Works
             </h1>
@@ -156,7 +156,7 @@ export default function HowItWorks() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why Choose EduXperience?
+              Why Choose LearnsConnect?
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Built with modern technology and user experience in mind
@@ -237,7 +237,7 @@ export default function HowItWorks() {
               Ready to Get Started?
             </h2>
             <p className="text-xl opacity-90">
-              Join thousands of learners, tutors, and institutions already using EduXperience
+              Join thousands of learners, tutors, and institutions already using LearnsConnect
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup-choice">

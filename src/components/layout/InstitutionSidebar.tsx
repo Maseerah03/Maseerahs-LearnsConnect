@@ -105,7 +105,7 @@ export function InstitutionSidebar({ className }: InstitutionSidebarProps) {
             <Home className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">EduXperience</h1>
+            <h1 className="text-lg font-semibold text-gray-900">LearnsConnect</h1>
             <p className="text-xs text-gray-500">Institution Portal</p>
           </div>
         </div>
@@ -146,7 +146,7 @@ export function InstitutionSidebar({ className }: InstitutionSidebarProps) {
       {/* Footer Section */}
       <div className="p-4 border-t border-gray-200">
         <div className="text-xs text-gray-500 text-center">
-          <p>© 2024 EduXperience</p>
+          <p>© 2024 LearnsConnect</p>
           <p>Institution Portal v1.0</p>
         </div>
       </div>

@@ -19,12 +19,16 @@ export const Header = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <div className="p-2 bg-gradient-primary rounded-lg shadow-soft group-hover:shadow-medium transition-all duration-300">
-              <GraduationCap className="h-6 w-6 text-primary-foreground" />
+          <Link to="/" className="flex items-center space-x-3 group">
+            <div className="h-10 w-10 rounded-lg overflow-hidden shadow-soft group-hover:shadow-medium transition-all duration-300">
+              <img 
+                src="/logo.jpg" 
+                alt="LearnsConnect Logo" 
+                className="h-full w-full object-cover"
+              />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              EduXperience
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-white bg-clip-text text-transparent">
+              LearnsConnect
             </span>
           </Link>
 

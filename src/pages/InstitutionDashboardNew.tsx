@@ -276,7 +276,7 @@ export default function InstitutionDashboard() {
             <Sidebar className="bg-sidebar border-r">
               <SidebarContent>
                 <div className="p-4 border-b">
-                  <h2 className="text-lg font-bold text-primary">EduXperience</h2>
+                  <h2 className="text-lg font-bold text-primary">LearnsConnect</h2>
                   <p className="text-sm text-muted-foreground">Institution Dashboard</p>
           </div>
               </SidebarContent>
@@ -303,7 +303,7 @@ export default function InstitutionDashboard() {
             <Sidebar className="bg-sidebar border-r">
               <SidebarContent>
                 <div className="p-4 border-b">
-                  <h2 className="text-lg font-bold text-primary">EduXperience</h2>
+                  <h2 className="text-lg font-bold text-primary">LearnsConnect</h2>
                   <p className="text-sm text-muted-foreground">Institution Dashboard</p>
           </div>
               </SidebarContent>
@@ -1768,11 +1768,11 @@ function InquiriesDashboard({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
                 Student Inquiries
                 <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              </CardTitle>
+          </CardTitle>
               <p className="text-sm text-gray-600">Manage student inquiries and payment access</p>
             </div>
           </div>
@@ -1782,7 +1782,7 @@ function InquiriesDashboard({
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
               <p className="text-gray-500">Loading inquiries...</p>
-            </div>
+          </div>
           ) : filteredInquiries.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -2071,7 +2071,7 @@ function InquiriesDashboard({
           </div>
         </DialogContent>
       </Dialog>
-        </div>
+    </div>
   );
 }
 

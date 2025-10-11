@@ -80,8 +80,8 @@ export default function About() {
           <div className="max-w-4xl mx-auto space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
               About
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                {" "}EduXperience
+              <span className="bg-gradient-to-r from-blue-500 to-white bg-clip-text text-transparent">
+                {" "}LearnsConnect
               </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">

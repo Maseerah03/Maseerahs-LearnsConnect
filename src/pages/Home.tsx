@@ -168,7 +168,7 @@ export default function Home() {
           <div className="text-center mb-20">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-full px-4 py-2 text-sm font-medium text-primary mb-6">
               <CheckCircle className="h-4 w-4" />
-              Why Choose EduXperience?
+              Why Choose LearnsConnect?
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Revolutionizing Education Through{" "}
@@ -232,7 +232,7 @@ export default function Home() {
             </h2>
             <p className="text-xl opacity-90 max-w-2xl mx-auto leading-relaxed">
               Join thousands of learners who have already discovered the power of personalized education 
-              with EduXperience. Your future starts here.
+              with LearnsConnect. Your future starts here.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link to="/signup-choice">

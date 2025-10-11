@@ -1599,7 +1599,7 @@ export default function StudentDashboard() {
           <Sidebar className="bg-sidebar border-r">
             <SidebarContent>
               <div className="p-4 border-b">
-                <h2 className="text-lg font-bold text-primary">EduXperience</h2>
+                <h2 className="text-lg font-bold text-primary">LearnsConnect</h2>
                 <p className="text-sm text-muted-foreground">Student Dashboard</p>
               </div>
               <SidebarMenu>

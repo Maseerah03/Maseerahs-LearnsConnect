@@ -13,7 +13,7 @@ export default function SignUpChoice() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
-              Join EduXperience
+              Join LearnsConnect
             </h1>
             <p className="text-xl text-muted-foreground">
               Choose how you'd like to be part of our learning community
