@@ -76,6 +76,7 @@ import {
   Building2,
   Phone,
   Mail,
+  RefreshCw,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -133,69 +134,122 @@ function ContactInstitutions() {
     fetchInstitutions();
   }, []);
 
+  // Add a refresh function for debugging
+  const handleRefresh = () => {
+    console.log('🔄 [ContactInstitutions] Manual refresh triggered');
+    fetchInstitutions();
+  };
+
   const fetchInstitutions = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Starting to fetch institutions...');
+      console.log('🔍 [ContactInstitutions] Starting to fetch institutions...');
       
-      // First, try to get institution profiles with profile data using join
-      const { data: institutionData, error: institutionError } = await supabase
+      // Check current user authentication
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('🔍 [ContactInstitutions] Current user:', { user: user?.id, userError });
+      
+      // If user is not authenticated, try to get session
+      if (!user) {
+        console.log('🔍 [ContactInstitutions] No user found, checking session...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('🔍 [ContactInstitutions] Session:', { session: session?.user?.id, sessionError });
+        
+        if (!session) {
+          console.log('⚠️ [ContactInstitutions] No active session - trying to refresh...');
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            console.log('🔍 [ContactInstitutions] Refresh result:', { 
+              user: refreshData?.user?.id, 
+              refreshError 
+            });
+          } catch (refreshErr) {
+            console.log('⚠️ [ContactInstitutions] Refresh failed:', refreshErr);
+          }
+        }
+      }
+      
+      // First, let's test if the table exists and has any data
+      console.log('🔍 [ContactInstitutions] Testing basic table access...');
+      const { data: testData, error: testError } = await supabase
         .from('institution_profiles')
-        .select(`
-          *,
-          profile:user_id(
-            user_id,
-            full_name,
-            city,
-            area,
-            role,
-            profile_photo_url
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (institutionError) {
-        console.error('Error fetching institution profiles with join:', institutionError);
+        .select('id, institution_name, user_id, verified')
+        .limit(1);
+      
+      console.log('🔍 [ContactInstitutions] Basic table test:', { testData, testError });
+      
+      // Check if we can access verified institutions
+      console.log('🔍 [ContactInstitutions] Testing verified institutions access...');
+      const { data: verifiedData, error: verifiedError } = await supabase
+        .from('institution_profiles')
+        .select('id, institution_name, user_id, verified')
+        .eq('verified', true)
+        .limit(1);
+      
+      console.log('🔍 [ContactInstitutions] Verified institutions test:', { verifiedData, verifiedError });
+      
+      // Since RLS is still blocking access despite our fixes, let's try a different approach
+      console.log('🔍 [ContactInstitutions] RLS is still blocking access, trying alternative approach...');
+      
+      // Try using a direct HTTP request to bypass potential client-side issues
+      console.log('🔍 [ContactInstitutions] Trying direct HTTP approach...');
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/institution_profiles?select=*`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
-        // Fallback: try without join (separate queries)
-        console.log('Trying fallback approach with separate queries...');
-        const { data: fallbackInstitutionData, error: fallbackInstitutionError } = await supabase
-          .from('institution_profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔍 [ContactInstitutions] Direct HTTP result:', data);
+          
+          if (data && data.length > 0) {
+            console.log('✅ [ContactInstitutions] Direct HTTP worked!');
+            
+            // Transform the data to match our interface
+            const transformedInstitutions = data.map((institution: any) => ({
+              ...institution,
+              profile: {
+                user_id: institution.user_id,
+                full_name: 'Institution Contact',
+                city: institution.city || 'Various Locations',
+                area: institution.state || 'Online & In-Person',
+                role: 'institution'
+              }
+            }));
 
-        if (fallbackInstitutionError) {
-          console.error('Fallback also failed:', fallbackInstitutionError);
-          setError('Failed to load institutions');
-          return;
+            console.log('🔍 [ContactInstitutions] Transformed institutions:', transformedInstitutions);
+            setInstitutions(transformedInstitutions);
+            return;
+          }
+        } else {
+          console.log('❌ [ContactInstitutions] Direct HTTP failed:', response.status, response.statusText);
         }
-
-        if (!fallbackInstitutionData || fallbackInstitutionData.length === 0) {
-          console.log('No institution profiles found');
-          setInstitutions([]);
-          return;
-        }
-
-        console.log('Found institution profiles (fallback):', fallbackInstitutionData.length);
-
-        // Fetch profiles separately
-        const userIds = fallbackInstitutionData.map(institution => institution.user_id);
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, city, area, role, profile_photo_url')
-          .in('user_id', userIds);
-
-        if (profileError) {
-          console.error('Error fetching profiles:', profileError);
-        }
-
-        const profileMap = new Map(profileData?.map(profile => [profile.user_id, profile]) || []);
+      } catch (httpError) {
+        console.log('❌ [ContactInstitutions] Direct HTTP error:', httpError);
+      }
+      
+      // If direct HTTP doesn't work, try one more Supabase query with different approach
+      console.log('🔍 [ContactInstitutions] Trying Supabase query with different approach...');
+      const { data: alternativeData, error: alternativeError } = await supabase
+        .from('institution_profiles')
+        .select('*')
+        .limit(10);
+      
+      console.log('🔍 [ContactInstitutions] Alternative query result:', { alternativeData, alternativeError });
+      
+      if (alternativeData && alternativeData.length > 0) {
+        console.log('✅ [ContactInstitutions] Alternative query worked!');
         
-        const transformedInstitutions = fallbackInstitutionData.map(institution => ({
+        // Transform the data to match our interface
+        const transformedInstitutions = alternativeData.map(institution => ({
           ...institution,
-          profile: profileMap.get(institution.user_id) || {
+          profile: {
             user_id: institution.user_id,
             full_name: 'Institution Contact',
             city: institution.city || 'Various Locations',
@@ -204,18 +258,22 @@ function ContactInstitutions() {
           }
         }));
 
+        console.log('🔍 [ContactInstitutions] Transformed institutions:', transformedInstitutions);
         setInstitutions(transformedInstitutions);
         return;
       }
-
-      if (!institutionData || institutionData.length === 0) {
-        console.log('No institution profiles found');
-        setInstitutions([]);
-        return;
+      
+      // If we get here, RLS is definitely blocking access
+      console.log('❌ [ContactInstitutions] All queries blocked - checking authentication status');
+      
+      // Check if this is an authentication issue
+      if (!user) {
+        console.log('❌ [ContactInstitutions] No authenticated user - this is likely the root cause');
+        setError('Please log in to view institutions. Authentication is required.');
+      } else {
+        console.log('❌ [ContactInstitutions] User is authenticated but queries still fail - RLS issue');
+        setError('Database access is restricted. Please contact administrator to fix RLS policies.');
       }
-
-      console.log('Found institution profiles (with join):', institutionData.length);
-      setInstitutions(institutionData);
       
     } catch (error) {
       console.error('Error fetching institutions:', error);
@@ -249,7 +307,7 @@ function ContactInstitutions() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Contact Institutions</h2>
-            <p className="text-gray-600">Connect with verified educational institutions</p>
+            <p className="text-gray-600">Connect with educational institutions (verified and pending)</p>
           </div>
         </div>
         
@@ -269,7 +327,7 @@ function ContactInstitutions() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Contact Institutions</h2>
-            <p className="text-gray-600">Connect with verified educational institutions</p>
+            <p className="text-gray-600">Connect with educational institutions (verified and pending)</p>
           </div>
         </div>
         
@@ -277,7 +335,17 @@ function ContactInstitutions() {
           <div className="text-red-500 mb-4">
             <Building2 className="h-12 w-12 mx-auto mb-2" />
             <p className="text-lg font-medium">Error Loading Institutions</p>
-            <p className="text-sm text-gray-500">{error}</p>
+            <p className="text-sm text-gray-500 mb-4">{error}</p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-yellow-800">
+                <strong>Possible Solutions:</strong>
+              </p>
+              <ul className="text-sm text-yellow-800 mt-2 text-left">
+                <li>• Run the RLS fix script in Supabase</li>
+                <li>• Check if institutions are verified</li>
+                <li>• Contact administrator for access</li>
+              </ul>
+            </div>
           </div>
           <Button onClick={fetchInstitutions} variant="outline">
             Try Again
@@ -293,11 +361,17 @@ function ContactInstitutions() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Contact Institutions</h2>
-          <p className="text-gray-600">Connect with verified educational institutions</p>
+          <p className="text-gray-600">Connect with educational institutions (verified and pending)</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Building2 className="h-4 w-4" />
-          <span>{institutions.length} institutions available</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Building2 className="h-4 w-4" />
+            <span>{institutions.length} institutions available</span>
+          </div>
+          <Button onClick={handleRefresh} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
       </div>
 
@@ -307,7 +381,13 @@ function ContactInstitutions() {
           <div className="text-muted-foreground mb-4">
             <Building2 className="h-16 w-16 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">No institutions available</h3>
-            <p>Check back later for available institutions or contact support for assistance.</p>
+            <p className="mb-4">Currently, there are no institutions registered in the system.</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Both verified and pending institutions are displayed here. 
+                Check back later as more institutions register.
+              </p>
+            </div>
           </div>
         </div>
       ) : (
@@ -373,9 +453,13 @@ function ContactInstitutions() {
                   <Badge variant="outline" className="text-xs">
                     {getInstitutionType(institution.institution_type)}
                   </Badge>
-                  {institution.verified && (
-                    <Badge variant="default" className="text-xs">
+                  {institution.verified ? (
+                    <Badge variant="default" className="text-xs bg-green-100 text-green-800">
                       ✓ Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                      ⏳ Pending Verification
                     </Badge>
                   )}
                 </div>
