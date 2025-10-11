@@ -77,7 +77,6 @@ import {
   Phone,
   Mail,
   RefreshCw,
-  X,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 

@@ -30,9 +30,9 @@ export function useInquiries() {
         throw new Error('User not authenticated');
       }
 
-      // Fetch inquiries from institution_student_inquiries table
+      // Fetch inquiries from institution_student_enquiries table
       const { data: inquiriesData, error: inquiriesError } = await supabase
-        .from('institution_student_inquiries')
+        .from('institution_student_enquiries')
         .select('*')
         .eq('institution_id', user.id)
         .order('created_at', { ascending: false });
@@ -167,7 +167,7 @@ export function useInquiries() {
     try {
       // Update the status in the database
       const { error } = await supabase
-        .from('institution_student_inquiries')
+        .from('institution_student_enquiries')
         .update({ status })
         .eq('id', inquiryId);
 

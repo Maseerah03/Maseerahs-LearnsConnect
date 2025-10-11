@@ -1424,12 +1424,12 @@ function InquiriesDashboard({
     }
   };
 
-  // Fetch inquiries data from institution_student_inquiries table
+  // Fetch inquiries data from institution_student_enquiries table
   const fetchInquiries = async (userId: string) => {
     try {
-      // Fetch real inquiries from institution_student_inquiries table
+      // Fetch real inquiries from institution_student_enquiries table
       const { data: inquiriesData, error: inquiriesError } = await supabase
-        .from('institution_student_inquiries')
+        .from('institution_student_enquiries')
         .select('*')
         .eq('institution_id', userId)
         .order('created_at', { ascending: false });
@@ -1509,7 +1509,7 @@ function InquiriesDashboard({
     try {
       // Update the status in the database
       const { error } = await supabase
-        .from('institution_student_inquiries')
+        .from('institution_student_enquiries')
         .update({ status: newStatus })
         .eq('id', inquiryId);
 
