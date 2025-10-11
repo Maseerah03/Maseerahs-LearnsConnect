@@ -73,12 +73,41 @@ import {
   Tag,
   Trash2,
   GraduationCap,
+  Building2,
+  Phone,
+  Mail,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type StudentProfile = Tables<"student_profiles">;
 type TutorProfile = Tables<"tutor_profiles">;
 type Profile = Tables<"profiles">;
+
+interface InstitutionProfile {
+  id: string;
+  user_id: string;
+  institution_name: string;
+  institution_type?: string;
+  official_email?: string;
+  primary_contact?: string;
+  secondary_contact?: string;
+  website_url?: string;
+  complete_address?: string;
+  city?: string;
+  state?: string;
+  pin_code?: string;
+  established_year?: number;
+  verified?: boolean;
+  created_at: string;
+  profile?: {
+    user_id: string;
+    full_name: string;
+    city: string;
+    area: string;
+    role: string;
+    profile_photo_url?: string;
+  };
+}
 
 interface DashboardState {
   activeTab: string;
@@ -92,6 +121,305 @@ interface DashboardState {
   showResponsesModal: boolean;
   selectedRequirement: any;
   requirementContext: any;
+}
+
+// Contact Institutions Component
+function ContactInstitutions() {
+  const [institutions, setInstitutions] = useState<InstitutionProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchInstitutions();
+  }, []);
+
+  const fetchInstitutions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Starting to fetch institutions...');
+      
+      // First, try to get institution profiles with profile data using join
+      const { data: institutionData, error: institutionError } = await supabase
+        .from('institution_profiles')
+        .select(`
+          *,
+          profile:user_id(
+            user_id,
+            full_name,
+            city,
+            area,
+            role,
+            profile_photo_url
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (institutionError) {
+        console.error('Error fetching institution profiles with join:', institutionError);
+        
+        // Fallback: try without join (separate queries)
+        console.log('Trying fallback approach with separate queries...');
+        const { data: fallbackInstitutionData, error: fallbackInstitutionError } = await supabase
+          .from('institution_profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fallbackInstitutionError) {
+          console.error('Fallback also failed:', fallbackInstitutionError);
+          setError('Failed to load institutions');
+          return;
+        }
+
+        if (!fallbackInstitutionData || fallbackInstitutionData.length === 0) {
+          console.log('No institution profiles found');
+          setInstitutions([]);
+          return;
+        }
+
+        console.log('Found institution profiles (fallback):', fallbackInstitutionData.length);
+
+        // Fetch profiles separately
+        const userIds = fallbackInstitutionData.map(institution => institution.user_id);
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, city, area, role, profile_photo_url')
+          .in('user_id', userIds);
+
+        if (profileError) {
+          console.error('Error fetching profiles:', profileError);
+        }
+
+        const profileMap = new Map(profileData?.map(profile => [profile.user_id, profile]) || []);
+        
+        const transformedInstitutions = fallbackInstitutionData.map(institution => ({
+          ...institution,
+          profile: profileMap.get(institution.user_id) || {
+            user_id: institution.user_id,
+            full_name: 'Institution Contact',
+            city: institution.city || 'Various Locations',
+            area: institution.state || 'Online & In-Person',
+            role: 'institution'
+          }
+        }));
+
+        setInstitutions(transformedInstitutions);
+        return;
+      }
+
+      if (!institutionData || institutionData.length === 0) {
+        console.log('No institution profiles found');
+        setInstitutions([]);
+        return;
+      }
+
+      console.log('Found institution profiles (with join):', institutionData.length);
+      setInstitutions(institutionData);
+      
+    } catch (error) {
+      console.error('Error fetching institutions:', error);
+      setError('Failed to load institutions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInstitutionType = (type?: string) => {
+    if (!type) return 'Educational Institution';
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  const handleContactInstitution = (institution: InstitutionProfile) => {
+    // Create a mailto link with pre-filled information
+    const subject = encodeURIComponent(`Inquiry about ${institution.institution_name}`);
+    const body = encodeURIComponent(`Hello,\n\nI am interested in learning more about your institution and the programs you offer.\n\nPlease provide me with more information about:\n- Available courses/programs\n- Admission requirements\n- Fee structure\n- Class schedules\n\nThank you for your time.\n\nBest regards`);
+    
+    if (institution.official_email) {
+      window.open(`mailto:${institution.official_email}?subject=${subject}&body=${body}`);
+    } else {
+      // Fallback to showing contact information
+      alert(`Contact Information:\nInstitution: ${institution.institution_name}\nPhone: ${institution.primary_contact || 'Not provided'}\nEmail: ${institution.official_email || 'Not provided'}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Contact Institutions</h2>
+            <p className="text-gray-600">Connect with verified educational institutions</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-500">Loading institutions...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Contact Institutions</h2>
+            <p className="text-gray-600">Connect with verified educational institutions</p>
+          </div>
+        </div>
+        
+        <div className="text-center py-12">
+          <div className="text-red-500 mb-4">
+            <Building2 className="h-12 w-12 mx-auto mb-2" />
+            <p className="text-lg font-medium">Error Loading Institutions</p>
+            <p className="text-sm text-gray-500">{error}</p>
+          </div>
+          <Button onClick={fetchInstitutions} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Contact Institutions</h2>
+          <p className="text-gray-600">Connect with verified educational institutions</p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Building2 className="h-4 w-4" />
+          <span>{institutions.length} institutions available</span>
+        </div>
+      </div>
+
+      {/* Institutions Grid */}
+      {institutions.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-muted-foreground mb-4">
+            <Building2 className="h-16 w-16 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No institutions available</h3>
+            <p>Check back later for available institutions or contact support for assistance.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {institutions.map((institution) => (
+            <Card key={institution.id} className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <CardContent className="p-6">
+                {/* Institution Header */}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {institution.institution_name}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                      <Building2 className="h-4 w-4" />
+                      <span className="truncate">{getInstitutionType(institution.institution_type)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <MapPin className="h-4 w-4" />
+                      <span>{institution.profile?.city || institution.city}, {institution.profile?.area || institution.state}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Institution Details */}
+                <div className="space-y-3 mb-4">
+                  {institution.established_year && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="h-4 w-4" />
+                      <span>Established {institution.established_year}</span>
+                    </div>
+                  )}
+                  
+                  {institution.primary_contact && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      <span>{institution.primary_contact}</span>
+                    </div>
+                  )}
+                  
+                  {institution.official_email && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4" />
+                      <span className="truncate">{institution.official_email}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Address */}
+                {institution.complete_address && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {institution.complete_address}
+                    </p>
+                  </div>
+                )}
+
+                {/* Status Badge */}
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge variant="outline" className="text-xs">
+                    {getInstitutionType(institution.institution_type)}
+                  </Badge>
+                  {institution.verified && (
+                    <Badge variant="default" className="text-xs">
+                      ✓ Verified
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Contact Button */}
+                <Button 
+                  onClick={() => handleContactInstitution(institution)}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={!institution.official_email && !institution.primary_contact}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Institution
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Additional Information */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Info className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-blue-900 mb-2">How to Contact Institutions</h4>
+              <p className="text-sm text-blue-800 mb-3">
+                Click "Contact Institution" to send an email inquiry. Include your specific questions about:
+              </p>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Available courses and programs</li>
+                <li>• Admission requirements and process</li>
+                <li>• Fee structure and payment options</li>
+                <li>• Class schedules and timings</li>
+                <li>• Campus facilities and infrastructure</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function StudentDashboard() {
@@ -1585,6 +1913,7 @@ export default function StudentDashboard() {
       { label: "Book Sessions", icon: <Calendar />, id: "book-sessions" },
       { label: "Find Tutors", icon: <Search />, id: "tutors" },
           { label: "My Requirements", icon: <List />, id: "requirements" },
+    { label: "Contact Institution", icon: <Building2 />, id: "institutions" },
     { label: "Messages", icon: <MessageCircle />, id: "messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { label: "Help & Support", icon: <HelpCircle />, id: "help" },
   ];
@@ -1702,6 +2031,10 @@ export default function StudentDashboard() {
             )}
 
 
+
+            {state.activeTab === "institutions" && (
+              <ContactInstitutions />
+            )}
 
             {state.activeTab === "help" && (
               <HelpSupport />
