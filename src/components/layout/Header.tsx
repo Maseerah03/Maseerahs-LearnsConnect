@@ -27,7 +27,7 @@ export const Header = () => {
                 className="h-full w-full object-cover"
               />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-white bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-gray-900">
               LearnsConnect
             </span>
           </Link>

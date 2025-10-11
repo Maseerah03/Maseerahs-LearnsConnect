@@ -546,8 +546,12 @@ function DashboardHome({
                 <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
                   {/* Institution Logo */}
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shadow-lg">
+                      <img 
+                        src="/logo.jpg" 
+                        alt="LearnsConnect Logo" 
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                   </div>
                   

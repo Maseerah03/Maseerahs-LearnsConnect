@@ -101,8 +101,12 @@ export function InstitutionSidebar({ className }: InstitutionSidebarProps) {
       {/* Logo/Brand Section */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Home className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden">
+            <img 
+              src="/logo.jpg" 
+              alt="LearnsConnect Logo" 
+              className="h-full w-full object-cover"
+            />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">LearnsConnect</h1>
