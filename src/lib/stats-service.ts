@@ -22,6 +22,14 @@ export class StatsService {
   };
 
   /**
+   * Clear the cache to force refresh
+   */
+  static clearCache(): void {
+    this.cache.stats = null;
+    this.cache.timestamp = 0;
+  }
+
+  /**
    * Fetch real-time statistics for the landing page with caching
    */
   static async getLandingPageStats(forceRefresh = false): Promise<LandingPageStats> {
@@ -66,10 +74,10 @@ export class StatsService {
       }
       
       return {
-        activeStudents: 0,
-        expertTutors: 0,
-        partnerInstitutions: 0,
-        successRate: 0
+        activeStudents: 614926,
+        expertTutors: 12035,
+        partnerInstitutions: 10,
+        successRate: 84
       };
     }
   }
@@ -78,100 +86,32 @@ export class StatsService {
    * Get count of active students
    */
   private static async getActiveStudentsCount(): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'student');
-
-      if (error) {
-        console.error('Error fetching students count:', error);
-        return 0;
-      }
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching students count:', error);
-      return 0;
-    }
+    // Return hardcoded value as requested
+    return 614926;
   }
 
   /**
    * Get count of expert tutors (verified tutors)
    */
   private static async getExpertTutorsCount(): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('tutor_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('verified', true);
-
-      if (error) throw error;
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching tutors count:', error);
-      return 0;
-    }
+    // Return hardcoded value as requested
+    return 12035;
   }
 
   /**
    * Get count of partner institutions (institution role users)
    */
   private static async getPartnerInstitutionsCount(): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'institution');
-
-      if (error) {
-        console.error('Error fetching institutions count:', error);
-        return 0;
-      }
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching institutions count:', error);
-      return 0;
-    }
+    // Return hardcoded value as requested
+    return 10;
   }
 
   /**
    * Calculate success rate based on verified profiles and other metrics
    */
   private static async getSuccessRate(): Promise<number> {
-    try {
-      // Try to get success rate from reviews first
-      const { data: reviews, error: reviewsError } = await supabase
-        .from('reviews')
-        .select('rating');
-
-      if (!reviewsError && reviews && reviews.length > 0) {
-        const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
-        const averageRating = totalRating / reviews.length;
-        return Math.round((averageRating / 5) * 100);
-      }
-
-      // Fallback to verification-based calculation
-      const [verifiedTutors, institutionProfiles] = await Promise.all([
-        supabase
-          .from('tutor_profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('verified', true),
-        supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('role', 'institution')
-      ]);
-
-      const totalVerified = (verifiedTutors.count || 0) + (institutionProfiles.count || 0);
-      const totalProfiles = await this.getTotalProfilesCount();
-
-      if (totalProfiles === 0) return 0;
-      
-      return Math.round((totalVerified / totalProfiles) * 100);
-    } catch (error) {
-      console.error('Error calculating success rate:', error);
-      return 0;
-    }
+    // Return hardcoded value as requested
+    return 84;
   }
 
   /**

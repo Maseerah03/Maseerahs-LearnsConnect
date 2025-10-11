@@ -11,10 +11,10 @@ export interface UseLandingStatsReturn {
 
 export function useLandingStats(): UseLandingStatsReturn {
   const [stats, setStats] = useState<LandingPageStats>({
-    activeStudents: 0,
-    expertTutors: 0,
-    partnerInstitutions: 0,
-    successRate: 0
+    activeStudents: 614926,
+    expertTutors: 12035,
+    partnerInstitutions: 10,
+    successRate: 84
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

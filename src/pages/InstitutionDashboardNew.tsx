@@ -1424,43 +1424,43 @@ function InquiriesDashboard({
     }
   };
 
-  // Fetch inquiries data
+  // Fetch inquiries data from institution_student_inquiries table
   const fetchInquiries = async (userId: string) => {
     try {
-      // Get inquiries from a mock inquiries table (in real implementation, this would be actual inquiries)
-      // For now, we'll create mock inquiries based on courses
-      const { data: courses, error: coursesError } = await supabase
-        .from('courses')
-        .select('id, title, created_at, tutor_id')
-        .eq('tutor_id', userId);
+      // Fetch real inquiries from institution_student_inquiries table
+      const { data: inquiriesData, error: inquiriesError } = await supabase
+        .from('institution_student_inquiries')
+        .select('*')
+        .eq('institution_id', userId)
+        .order('created_at', { ascending: false });
 
-      if (coursesError) {
-        console.error('Error fetching courses for inquiries:', coursesError);
+      if (inquiriesError) {
+        console.error('Error fetching inquiries:', inquiriesError);
         return [];
       }
 
-      // Mock inquiries based on courses (in real implementation, this would be actual inquiries)
-      const mockInquiries = (courses || []).map((course, index) => ({
-        id: `inquiry_${course.id}_${index}`,
-        studentName: `Student ${index + 1}`,
-        studentEmail: `student${index + 1}@example.com`,
-        studentPhone: `+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        courseName: course.title,
-        inquiryDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: ['new', 'contacted', 'interested', 'admitted', 'closed'][Math.floor(Math.random() * 5)],
-        priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
-        message: `I'm interested in learning ${course.title}. Could you please provide more details about the course structure and fees?`,
-        paymentStatus: ['paid', 'unpaid'][Math.floor(Math.random() * 2)],
-        paymentAmount: Math.floor(Math.random() * 100) + 25, // $25-$125
-        paymentDate: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-        source: ['website', 'phone', 'email', 'referral'][Math.floor(Math.random() * 4)],
-        followUpDate: new Date(Date.now() + Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        notes: `Student showed interest in ${course.title}. Follow up required.`,
-        isPaid: Math.random() > 0.3 // 70% chance of being paid
+      // Transform the data to match the expected format
+      const transformedInquiries = (inquiriesData || []).map((inquiry: any) => ({
+        id: inquiry.id,
+        studentName: inquiry.student_name,
+        studentEmail: inquiry.student_email,
+        studentPhone: inquiry.student_phone || '',
+        courseName: inquiry.course_interest,
+        inquiryDate: inquiry.created_at,
+        status: inquiry.status,
+        priority: 'medium', // Default priority since it's not in the table
+        message: inquiry.message,
+        paymentStatus: 'unpaid', // Default since payment info is not in the table
+        paymentAmount: 0,
+        paymentDate: null,
+        source: 'website', // Default source
+        followUpDate: null,
+        notes: '',
+        isPaid: false
       }));
 
       // Filter by status and priority
-      let filteredInquiries = mockInquiries;
+      let filteredInquiries = transformedInquiries;
       if (selectedStatus !== 'all') {
         filteredInquiries = filteredInquiries.filter(inquiry => inquiry.status === selectedStatus);
       }
@@ -1507,8 +1507,17 @@ function InquiriesDashboard({
 
   const handleStatusChange = async (inquiryId: string, newStatus: string) => {
     try {
-      // In real implementation, this would update the database
-      console.log(`Updating inquiry ${inquiryId} to status: ${newStatus}`);
+      // Update the status in the database
+      const { error } = await supabase
+        .from('institution_student_inquiries')
+        .update({ status: newStatus })
+        .eq('id', inquiryId);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`Updated inquiry ${inquiryId} to status: ${newStatus}`);
       
       // Update local state
       setInquiriesData(prev => ({
@@ -1519,11 +1528,14 @@ function InquiriesDashboard({
       }));
 
       // Refresh stats
-      const stats = await fetchInquiriesStats('current_user');
-      setInquiriesData(prev => ({
-        ...prev,
-        stats
-      }));
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const stats = await fetchInquiriesStats(user.id);
+        setInquiriesData(prev => ({
+          ...prev,
+          stats
+        }));
+      }
 
     } catch (error) {
       console.error('Error updating inquiry status:', error);

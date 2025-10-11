@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { StudentInquiry, InquiryFilters, InquiryStats, FollowUpEntry } from '@/types/inquiry';
 
 export function useInquiries() {
@@ -30,12 +30,35 @@ export function useInquiries() {
         throw new Error('User not authenticated');
       }
 
-      // TODO: Implement proper inquiry system with dedicated inquiries table
-      // For now, we'll return empty inquiries to avoid showing student-tutor conversations
-      // as inquiries in the institution dashboard
-      
-      setInquiries([]);
-      calculateStats([]);
+      // Fetch inquiries from institution_student_inquiries table
+      const { data: inquiriesData, error: inquiriesError } = await supabase
+        .from('institution_student_inquiries')
+        .select('*')
+        .eq('institution_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (inquiriesError) {
+        throw inquiriesError;
+      }
+
+      // Transform the data to match StudentInquiry interface
+      const transformedInquiries: StudentInquiry[] = (inquiriesData || []).map((inquiry: any) => ({
+        id: inquiry.id,
+        institution_id: inquiry.institution_id,
+        student_name: inquiry.student_name,
+        student_email: inquiry.student_email,
+        course_interest: inquiry.course_interest,
+        message: inquiry.message,
+        status: inquiry.status,
+        created_at: inquiry.created_at,
+        updated_at: inquiry.updated_at || inquiry.created_at,
+        inquiry_source: 'website', // Default value
+        priority: 'medium', // Default value
+        follow_up_history: [] // Default empty array
+      }));
+
+      setInquiries(transformedInquiries);
+      calculateStats(transformedInquiries);
     } catch (err) {
       console.error('Error fetching inquiries:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch inquiries');
@@ -142,7 +165,17 @@ export function useInquiries() {
 
   const updateInquiryStatus = async (inquiryId: string, status: StudentInquiry['status']) => {
     try {
-      // In a real app, this would update the database
+      // Update the status in the database
+      const { error } = await supabase
+        .from('institution_student_inquiries')
+        .update({ status })
+        .eq('id', inquiryId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
       setInquiries(prev => prev.map(inquiry => 
         inquiry.id === inquiryId 
           ? { ...inquiry, status, updated_at: new Date().toISOString() }

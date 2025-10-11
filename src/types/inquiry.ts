@@ -1,5 +1,6 @@
 export interface StudentInquiry {
   id: string;
+  institution_id: string;
   student_name: string;
   student_email: string;
   student_phone?: string;
