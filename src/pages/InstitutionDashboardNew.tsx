@@ -4416,190 +4416,167 @@ function FeesDashboard({
   lastRefreshTime: Date;
   onRefresh: () => void;
 }) {
-  const [selectedPeriod, setSelectedPeriod] = useState('thisMonth');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [feesData, setFeesData] = useState({
-    fees: [],
-    stats: {
-      totalFees: 0,
-      collected: 0,
-      pending: 0,
-      overdue: 0,
-      thisMonth: 0
-    }
-  });
-  const [selectedFee, setSelectedFee] = useState(null);
-  const [showFeeDetails, setShowFeeDetails] = useState(false);
-  const [showAddFee, setShowAddFee] = useState(false);
+  const [feesData, setFeesData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
+  // Fetch fees data on component mount
   useEffect(() => {
-    loadFeesData();
-  }, [selectedPeriod, selectedStatus]);
+    fetchFeesData();
+  }, []);
 
-  const loadFeesData = async () => {
-    setIsLoading(true);
+  const fetchFeesData = async () => {
     try {
+      setLoading(true);
+      setError(null);
+
+      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        console.error('User not authenticated');
-        setIsLoading(false);
-        return;
+        throw new Error('User not authenticated');
       }
 
-      const [fees, stats] = await Promise.all([
-        fetchFees(user.id),
-        fetchFeesStats(user.id)
-      ]);
+      console.log('Fetching fees data for institution:', user.id);
 
-      setFeesData({
-        fees,
-        stats
-      });
+      // Fetch fees with related data
+      const { data: fees, error: feesError } = await supabase
+        .from('student_fees')
+        .select(`
+          id,
+          total_amount,
+          amount_paid,
+          balance_due,
+          currency,
+          payment_status,
+          due_date,
+          paid_date,
+          fee_type,
+          payment_method,
+          transaction_id,
+          notes,
+          created_at,
+          student_id,
+          course_id,
+          enrollment_id
+        `)
+        .eq('institution_id', user.id)
+        .order('created_at', { ascending: false });
 
-    } catch (error) {
-      console.error('Error loading fees data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchFees = async (userId: string) => {
-    try {
-      const { data: courses, error: coursesError } = await supabase
-        .from('courses')
-        .select('id, title, created_at, tutor_id')
-        .eq('tutor_id', userId);
-
-      if (coursesError) {
-        console.error('Error fetching courses for fees:', coursesError);
-        return [];
+      if (feesError) {
+        console.error('Error fetching fees:', feesError);
+        throw new Error('Failed to fetch fees data');
       }
 
-      const mockFees = (courses || []).map((course, index) => {
-        const baseAmount = Math.floor(Math.random() * 500) + 100; // $100-$600
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 30) - 15); // ±15 days
-        
-        const isOverdue = dueDate < new Date();
-        const isPaid = Math.random() > 0.3; // 70% chance of being paid
+      // Fetch student profiles
+      const studentIds = [...new Set(fees?.map(f => f.student_id) || [])];
+      let studentProfiles = [];
+      
+      if (studentIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', studentIds);
+
+        if (profilesError) {
+          console.error('Error fetching student profiles:', profilesError);
+        } else {
+          studentProfiles = profilesData || [];
+        }
+      }
+
+      // Fetch course details
+      const courseIds = [...new Set(fees?.map(f => f.course_id) || [])];
+      let courseDetails = [];
+      
+      if (courseIds.length > 0) {
+        const { data: coursesData, error: coursesError } = await supabase
+          .from('institution_courses')
+          .select('id, title, category')
+          .in('id', courseIds);
+
+        if (coursesError) {
+          console.error('Error fetching course details:', coursesError);
+        } else {
+          courseDetails = coursesData || [];
+        }
+      }
+
+      // Combine data
+      const enrichedFees = (fees || []).map(fee => {
+        const studentProfile = studentProfiles.find(p => p.id === fee.student_id);
+        const courseDetail = courseDetails.find(c => c.id === fee.course_id);
         
         return {
-          id: `fee_${course.id}_${index}`,
-          studentName: `Student ${index + 1}`,
-          studentEmail: `student${index + 1}@example.com`,
-          studentId: `STU${String(index + 1).padStart(3, '0')}`,
-          courseName: course.title,
-          courseId: course.id,
-          feeType: ['Tuition', 'Registration', 'Exam', 'Library', 'Lab'][Math.floor(Math.random() * 5)],
-          amount: baseAmount,
-          paidAmount: isPaid ? baseAmount : Math.floor(Math.random() * baseAmount),
-          dueDate: dueDate.toISOString(),
-          paidDate: isPaid ? new Date(dueDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-          status: isPaid ? 'paid' : (isOverdue ? 'overdue' : 'pending'),
-          paymentMethod: isPaid ? ['Cash', 'Card', 'Bank Transfer', 'UPI'][Math.floor(Math.random() * 4)] : null,
-          transactionId: isPaid ? `TXN${Math.random().toString(36).substr(2, 9).toUpperCase()}` : null,
-          notes: `Fee for ${course.title} - ${['Tuition', 'Registration', 'Exam', 'Library', 'Lab'][Math.floor(Math.random() * 5)]}`,
-          isPaid,
-          isOverdue
+          ...fee,
+          studentName: studentProfile?.full_name || `Student ${fee.student_id.slice(0, 8)}...`,
+          studentEmail: studentProfile?.email || 'N/A',
+          courseName: courseDetail?.title || 'Unknown Course',
+          courseCategory: courseDetail?.category || 'N/A'
         };
       });
 
-      let filteredFees = mockFees;
-      if (selectedStatus !== 'all') {
-        filteredFees = filteredFees.filter(fee => fee.status === selectedStatus);
+      setFeesData(enrichedFees);
+
+    } catch (err) {
+      console.error('Error in fetchFeesData:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch fees data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAsPaid = async (feeId: string) => {
+    try {
+      setIsUpdating(true);
+      
+      // Get the fee to update
+      const fee = feesData.find(f => f.id === feeId);
+      if (!fee) return;
+
+      // Update the fee to mark as paid
+      const { error: updateError } = await supabase
+        .from('student_fees')
+        .update({
+          amount_paid: fee.total_amount,
+          payment_status: 'paid',
+          paid_date: new Date().toISOString(),
+          payment_method: 'Manual Entry',
+          transaction_id: `MANUAL_${Date.now()}`
+        })
+        .eq('id', feeId);
+
+      if (updateError) {
+        console.error('Error updating fee:', updateError);
+        throw new Error('Failed to update fee');
       }
 
-      return filteredFees;
-    } catch (error) {
-      console.error('Error in fetchFees:', error);
-      return [];
-    }
-  };
+      // Refresh the data
+      await fetchFeesData();
+      onRefresh();
 
-  const fetchFeesStats = async (userId: string) => {
-    try {
-      const fees = await fetchFees(userId);
-      
-      const stats = {
-        totalFees: fees.length,
-        collected: fees.filter(f => f.isPaid).length,
-        pending: fees.filter(f => f.status === 'pending').length,
-        overdue: fees.filter(f => f.status === 'overdue').length,
-        thisMonth: fees.filter(f => {
-          const feeDate = new Date(f.dueDate);
-          const now = new Date();
-          return feeDate.getMonth() === now.getMonth() && feeDate.getFullYear() === now.getFullYear();
-        }).length
-      };
-
-      return stats;
-    } catch (error) {
-      console.error('Error in fetchFeesStats:', error);
-      return {
-        totalFees: 0,
-        collected: 0,
-        pending: 0,
-        overdue: 0,
-        thisMonth: 0
-      };
-    }
-  };
-
-  const handleStatusChange = async (feeId: string, newStatus: string) => {
-    try {
-      console.log(`Updating fee ${feeId} to status: ${newStatus}`);
-      
-      setFeesData(prev => ({
-        ...prev,
-        fees: prev.fees.map(fee => 
-          fee.id === feeId ? { 
-            ...fee, 
-            status: newStatus,
-            isPaid: newStatus === 'paid',
-            paidDate: newStatus === 'paid' ? new Date().toISOString() : null
-          } : fee
-        )
-      }));
-
-      const stats = await fetchFeesStats('current_user');
-      setFeesData(prev => ({
-        ...prev,
-        stats
-      }));
-
-    } catch (error) {
-      console.error('Error updating fee status:', error);
+    } catch (err) {
+      console.error('Error in handleMarkAsPaid:', err);
+      setError(err instanceof Error ? err.message : 'Failed to mark fee as paid');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'partial': return 'bg-yellow-100 text-yellow-800';
+      case 'pending': return 'bg-blue-100 text-blue-800';
       case 'overdue': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getFeeTypeColor = (feeType: string) => {
-    switch (feeType) {
-      case 'Tuition': return 'bg-blue-100 text-blue-800';
-      case 'Registration': return 'bg-purple-100 text-purple-800';
-      case 'Exam': return 'bg-orange-100 text-orange-800';
-      case 'Library': return 'bg-green-100 text-green-800';
-      case 'Lab': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const handleRefresh = () => {
+    fetchFeesData();
+    onRefresh();
   };
-
-  const filteredFees = feesData.fees.filter(fee =>
-    fee.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.studentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.feeType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-6">
@@ -4620,163 +4597,16 @@ function FeesDashboard({
         </div>
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => {
-              loadFeesData();
-              onRefresh();
-            }}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={loading}
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Refresh'}
-          </Button>
-          <Button onClick={() => setShowAddFee(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Fee
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Total Fees</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : feesData.stats.totalFees}
-                </p>
-                <p className="text-sm text-gray-500">All fee records</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Collected</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : feesData.stats.collected}
-                </p>
-                <p className="text-sm text-gray-500">Paid fees</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : feesData.stats.pending}
-                </p>
-                <p className="text-sm text-gray-500">Awaiting payment</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Overdue</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : feesData.stats.overdue}
-                </p>
-                <p className="text-sm text-gray-500">Past due date</p>
-              </div>
-              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : feesData.stats.thisMonth}
-                </p>
-                <p className="text-sm text-gray-500">Due this month</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <CalendarIcon className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by student, course, or fee type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Time</SelectItem>
-            <SelectItem value="thisMonth">This Month</SelectItem>
-            <SelectItem value="lastMonth">Last Month</SelectItem>
-            <SelectItem value="thisYear">This Year</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Fees Table */}
@@ -4786,104 +4616,110 @@ function FeesDashboard({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Fee Records
+                Student Fees
                 <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
               </CardTitle>
-              <p className="text-sm text-gray-600">Manage student fee payments and collections</p>
+              <p className="text-sm text-gray-600">Manage student fee payments and balances</p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <p className="text-gray-500">Loading fees...</p>
+              <p className="text-gray-500">Loading fees data...</p>
             </div>
-          ) : filteredFees.length > 0 ? (
+          ) : error ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <p className="text-red-600 mb-2">Error loading fees data</p>
+              <p className="text-sm text-gray-500">{error}</p>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                size="sm"
+                className="mt-4"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : feesData.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Student</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Student Name</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Course</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Fee Type</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Amount</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Due Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Amount Paid</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Balance Due</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredFees.map((fee) => (
+                  {feesData.map((fee) => (
                     <tr key={fee.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium text-gray-900">{fee.studentName}</p>
-                          <p className="text-sm text-gray-500">{fee.studentEmail}</p>
-                          <p className="text-xs text-gray-400">{fee.studentId}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600">
+                              {fee.studentName.split(' ').map(n => n[0]).join('')}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{fee.studentName}</p>
+                            <p className="text-sm text-gray-500">{fee.studentEmail}</p>
+                          </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-medium">{fee.courseName}</td>
                       <td className="py-3 px-4">
-                        <Badge className={getFeeTypeColor(fee.feeType)}>
-                          {fee.feeType}
+                        <div>
+                          <p className="font-medium text-gray-900">{fee.courseName}</p>
+                          <p className="text-sm text-gray-500">{fee.courseCategory}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {fee.currency} {fee.amount_paid.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            of {fee.currency} {fee.total_amount.toLocaleString()}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className={`font-medium ${fee.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {fee.currency} {fee.balance_due.toLocaleString()}
+                        </p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={getStatusColor(fee.payment_status)}>
+                          {fee.payment_status.charAt(0).toUpperCase() + fee.payment_status.slice(1)}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium text-gray-900">${fee.amount}</p>
-                          {fee.isPaid && (
-                            <p className="text-sm text-green-600">Paid: ${fee.paidAmount}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">
-                        <div>
-                          <p>{new Date(fee.dueDate).toLocaleDateString()}</p>
-                          {fee.isOverdue && (
-                            <p className="text-xs text-red-600">Overdue</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge className={getStatusColor(fee.status)}>
-                          {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
+                        {fee.payment_status !== 'paid' && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setSelectedFee(fee);
-                              setShowFeeDetails(true);
-                            }}
+                            onClick={() => handleMarkAsPaid(fee.id)}
+                            disabled={isUpdating}
+                            className="flex items-center gap-2 text-green-600 hover:text-green-700"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            {isUpdating ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                            Mark as Paid
                           </Button>
-                          {!fee.isPaid && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatusChange(fee.id, 'paid')}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Mark Paid
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleStatusChange(fee.id, 'pending')}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Reset
-                          </Button>
-                        </div>
+                        )}
+                        {fee.payment_status === 'paid' && (
+                          <span className="text-sm text-green-600 font-medium">
+                            ✓ Paid
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -4895,223 +4731,12 @@ function FeesDashboard({
               <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No fees found</p>
               <p className="text-sm text-gray-400 mt-1">
-                {searchTerm 
-                  ? 'No fees match your search criteria'
-                  : 'Fees will appear here when students are enrolled in courses'
-                }
+                Fees will appear here when students enroll in your courses
               </p>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-              <p className="text-sm text-gray-600">Common fee management tasks</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Fees
-              </Button>
-              <Button variant="outline" size="sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Fee Reports
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Fee Settings
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Fee Detail Dialog */}
-      {selectedFee && (
-        <Dialog open={showFeeDetails} onOpenChange={setShowFeeDetails}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Fee Details</DialogTitle>
-              <DialogDescription>
-                Detailed information about {selectedFee.studentName}'s fee
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="h-8 w-8 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">{selectedFee.studentName}</h3>
-                  <p className="text-gray-600">{selectedFee.studentEmail}</p>
-                  <p className="text-gray-500">{selectedFee.studentId}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className={getStatusColor(selectedFee.status)}>
-                      {selectedFee.status.toUpperCase()}
-                    </Badge>
-                    <Badge className={getFeeTypeColor(selectedFee.feeType)}>
-                      {selectedFee.feeType.toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Course</Label>
-                  <p className="text-sm text-gray-600">{selectedFee.courseName}</p>
-                </div>
-                <div>
-                  <Label>Fee Type</Label>
-                  <p className="text-sm text-gray-600">{selectedFee.feeType}</p>
-                </div>
-                <div>
-                  <Label>Total Amount</Label>
-                  <p className="text-sm text-gray-600 font-medium">${selectedFee.amount}</p>
-                </div>
-                <div>
-                  <Label>Paid Amount</Label>
-                  <p className="text-sm text-gray-600 font-medium">
-                    {selectedFee.isPaid ? `$${selectedFee.paidAmount}` : '$0'}
-                  </p>
-                </div>
-                <div>
-                  <Label>Due Date</Label>
-                  <p className="text-sm text-gray-600">{new Date(selectedFee.dueDate).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <Label>Paid Date</Label>
-                  <p className="text-sm text-gray-600">
-                    {selectedFee.paidDate ? new Date(selectedFee.paidDate).toLocaleDateString() : 'Not paid'}
-                  </p>
-                </div>
-                {selectedFee.isPaid && (
-                  <>
-                    <div>
-                      <Label>Payment Method</Label>
-                      <p className="text-sm text-gray-600">{selectedFee.paymentMethod}</p>
-                    </div>
-                    <div>
-                      <Label>Transaction ID</Label>
-                      <p className="text-sm text-gray-600 font-mono">{selectedFee.transactionId}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-              <div>
-                <Label>Notes</Label>
-                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md mt-1">
-                  {selectedFee.notes}
-                </p>
-              </div>
-              {selectedFee.isOverdue && !selectedFee.isPaid && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-5 w-5 text-red-600" />
-                    <h4 className="font-medium text-red-800">Overdue Payment</h4>
-                  </div>
-                  <p className="text-sm text-red-700">
-                    This fee is overdue. Please contact the student for immediate payment.
-                  </p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Add Fee Dialog */}
-      <Dialog open={showAddFee} onOpenChange={setShowAddFee}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Fee</DialogTitle>
-            <DialogDescription>
-              Create a new fee record for a student
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="student">Student</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="student1">Student 1</SelectItem>
-                  <SelectItem value="student2">Student 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="course">Course</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select course" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="course1">Course 1</SelectItem>
-                  <SelectItem value="course2">Course 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="feeType">Fee Type</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select fee type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tuition">Tuition</SelectItem>
-                  <SelectItem value="registration">Registration</SelectItem>
-                  <SelectItem value="exam">Exam</SelectItem>
-                  <SelectItem value="library">Library</SelectItem>
-                  <SelectItem value="lab">Lab</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="amount">Amount</Label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="0.00"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                type="date"
-              />
-            </div>
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Additional notes..."
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddFee(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setShowAddFee(false)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Fee
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
