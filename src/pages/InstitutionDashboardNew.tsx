@@ -5172,36 +5172,494 @@ function SettingsDashboard({
   lastRefreshTime: Date;
   onRefresh: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [isLoading, setIsLoading] = useState(false);
-  const [profileData, setProfileData] = useState(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('basic');
 
   // Get profile data from the hook
   const { profile, registrationData, refreshData } = useInstitutionDashboard();
 
-  useEffect(() => {
-    if (profile) {
-      setProfileData(profile);
-    }
-  }, [profile]);
+  // Form data state - matching all 7 steps from signup
+  const [formData, setFormData] = useState({
+    // Step 1: Basic Information
+    institutionName: '',
+    institutionType: '',
+    otherInstitutionType: '',
+    establishmentYear: '',
+    registrationNumber: '',
+    panNumber: '',
+    gstNumber: '',
+    officialEmail: '',
+    primaryContact: '',
+    secondaryContact: '',
+    websiteUrl: '',
+    completeAddress: '',
+    city: '',
+    state: '',
+    pinCode: '',
+    landmark: '',
+    mapLocation: '',
+    ownerDirectorName: '',
+    ownerContactNumber: '',
 
-  const handleProfileUpdate = async (updatedProfile: any) => {
-    try {
-      setIsLoading(true);
-      await refreshData();
-      setProfileData(updatedProfile);
-      // Show success message
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      // Show error message
-    } finally {
-      setIsLoading(false);
+    // Step 2: Facilities
+    totalClassrooms: '',
+    classroomCapacity: '',
+    libraryAvailable: 'no',
+    computerLabAvailable: 'no',
+    wifiAvailable: 'no',
+    parkingAvailable: 'no',
+    cafeteriaAvailable: 'no',
+    airConditioningAvailable: 'no',
+    cctvSecurityAvailable: 'no',
+    wheelchairAccessible: 'no',
+    projectorsSmartBoardsAvailable: 'no',
+    audioSystemAvailable: 'no',
+    transportationProvided: 'no',
+    hostelFacility: 'no',
+    studyMaterialProvided: 'no',
+    onlineClasses: 'no',
+    recordedSessions: 'no',
+    mockTestsAssessments: 'no',
+    careerCounseling: 'no',
+    jobPlacementAssistance: 'no',
+
+    // Step 3: Courses & Programs
+    totalCurrentStudents: '',
+    averageBatchSize: '',
+    studentTeacherRatio: '',
+    admissionTestRequired: 'no',
+    minimumQualification: '',
+    ageRestrictions: '',
+    admissionFees: '',
+    securityDeposit: '',
+    refundPolicy: '',
+
+    // Step 4: Faculty & Staff
+    totalTeachingStaff: '',
+    totalNonTeachingStaff: '',
+    averageFacultyExperience: '',
+    principalDirectorName: '',
+    principalDirectorQualification: '',
+    principalDirectorExperience: '',
+    principalDirectorBio: '',
+    phdHolders: '',
+    postGraduates: '',
+    graduates: '',
+    professionalCertified: '',
+    awardsReceived: '',
+    publications: '',
+    industryExperience: '',
+    trainingPrograms: '',
+
+    // Step 5: Achievements
+    institutionAwards: '',
+    governmentRecognition: '',
+    educationBoardAwards: '',
+    qualityCertifications: '',
+    mediaRecognition: '',
+    sportsAchievements: '',
+    culturalAchievements: '',
+    academicExcellenceAwards: '',
+    competitionWinners: '',
+    alumniSuccessStories: '',
+    placementRecords: '',
+    higherStudiesAdmissions: '',
+    scholarshipRecipients: '',
+
+    // Step 6: Fee Structure
+    emiAvailable: 'no',
+    paymentSchedule: '',
+    latePaymentPenalty: '',
+    scholarshipAvailable: 'no',
+    scholarshipCriteria: '',
+    discountMultipleCourses: '',
+    siblingDiscount: '',
+    earlyBirdDiscount: '',
+    educationLoanAssistance: 'no',
+    installmentFacility: 'no',
+    hardshipSupport: 'no',
+
+    // Step 7: Contact & Communication
+    primaryContactPerson: '',
+    designation: '',
+    directPhoneNumber: '',
+    emailAddress: '',
+    whatsappNumber: '',
+    bestTimeToContact: '',
+    facebookPageUrl: '',
+    instagramAccountUrl: '',
+    youtubeChannelUrl: '',
+    linkedinProfileUrl: '',
+    googleMyBusinessUrl: '',
+    emergencyContactPerson: '',
+    localPoliceStationContact: '',
+    nearestHospitalContact: '',
+    fireDepartmentContact: ''
+  });
+
+  // Load existing profile data from registrationData (which contains all 7-step data)
+  useEffect(() => {
+    if (registrationData) {
+      console.log('Loading registration data into form:', registrationData);
+      
+      setFormData(prev => ({
+        ...prev,
+        // Step 1: Basic Information
+        institutionName: registrationData.name || '',
+        institutionType: registrationData.type || '',
+        otherInstitutionType: registrationData.other_institution_type || '',
+        establishmentYear: registrationData.establishment_year?.toString() || '',
+        registrationNumber: registrationData.registration_number || '',
+        panNumber: registrationData.pan || '',
+        gstNumber: registrationData.gst || '',
+        officialEmail: registrationData.official_email || '',
+        primaryContact: registrationData.primary_contact || '',
+        secondaryContact: registrationData.secondary_contact || '',
+        websiteUrl: registrationData.website || '',
+        completeAddress: registrationData.complete_address || '',
+        city: registrationData.city || '',
+        state: registrationData.state || '',
+        pinCode: registrationData.pincode || '',
+        landmark: registrationData.landmark || '',
+        mapLocation: registrationData.map_location || '',
+        ownerDirectorName: registrationData.owner_name || '',
+        ownerContactNumber: registrationData.owner_contact || '',
+
+        // Step 2: Facilities (from step2_data JSONB)
+        totalClassrooms: registrationData.step2_data?.totalClassrooms || '',
+        classroomCapacity: registrationData.step2_data?.classroomCapacity || '',
+        libraryAvailable: registrationData.step2_data?.libraryAvailable || 'no',
+        computerLabAvailable: registrationData.step2_data?.computerLabAvailable || 'no',
+        wifiAvailable: registrationData.step2_data?.wifiAvailable || 'no',
+        parkingAvailable: registrationData.step2_data?.parkingAvailable || 'no',
+        cafeteriaAvailable: registrationData.step2_data?.cafeteriaAvailable || 'no',
+        airConditioningAvailable: registrationData.step2_data?.airConditioningAvailable || 'no',
+        cctvSecurityAvailable: registrationData.step2_data?.cctvSecurityAvailable || 'no',
+        wheelchairAccessible: registrationData.step2_data?.wheelchairAccessible || 'no',
+        projectorsSmartBoardsAvailable: registrationData.step2_data?.projectorsSmartBoardsAvailable || 'no',
+        audioSystemAvailable: registrationData.step2_data?.audioSystemAvailable || 'no',
+        transportationProvided: registrationData.step2_data?.transportationProvided || 'no',
+        hostelFacility: registrationData.step2_data?.hostelFacility || 'no',
+        studyMaterialProvided: registrationData.step2_data?.studyMaterialProvided || 'no',
+        onlineClasses: registrationData.step2_data?.onlineClasses || 'no',
+        recordedSessions: registrationData.step2_data?.recordedSessions || 'no',
+        mockTestsAssessments: registrationData.step2_data?.mockTestsAssessments || 'no',
+        careerCounseling: registrationData.step2_data?.careerCounseling || 'no',
+        jobPlacementAssistance: registrationData.step2_data?.jobPlacementAssistance || 'no',
+
+        // Step 3: Courses & Programs (from step3_data JSONB)
+        totalCurrentStudents: registrationData.step3_data?.totalCurrentStudents || '',
+        averageBatchSize: registrationData.step3_data?.averageBatchSize || '',
+        studentTeacherRatio: registrationData.step3_data?.studentTeacherRatio || '',
+        admissionTestRequired: registrationData.step3_data?.admissionTestRequired || 'no',
+        minimumQualification: registrationData.step3_data?.minimumQualification || '',
+        ageRestrictions: registrationData.step3_data?.ageRestrictions || '',
+        admissionFees: registrationData.step3_data?.admissionFees || '',
+        securityDeposit: registrationData.step3_data?.securityDeposit || '',
+        refundPolicy: registrationData.step3_data?.refundPolicy || '',
+
+        // Step 4: Faculty & Staff (from step4_data JSONB)
+        totalTeachingStaff: registrationData.step4_data?.totalTeachingStaff || '',
+        totalNonTeachingStaff: registrationData.step4_data?.totalNonTeachingStaff || '',
+        averageFacultyExperience: registrationData.step4_data?.averageFacultyExperience || '',
+        principalDirectorName: registrationData.step4_data?.principalDirectorName || '',
+        principalDirectorQualification: registrationData.step4_data?.principalDirectorQualification || '',
+        principalDirectorExperience: registrationData.step4_data?.principalDirectorExperience || '',
+        principalDirectorBio: registrationData.step4_data?.principalDirectorBio || '',
+        phdHolders: registrationData.step4_data?.phdHolders || '',
+        postGraduates: registrationData.step4_data?.postGraduates || '',
+        graduates: registrationData.step4_data?.graduates || '',
+        professionalCertified: registrationData.step4_data?.professionalCertified || '',
+        awardsReceived: registrationData.step4_data?.awardsReceived || '',
+        publications: registrationData.step4_data?.publications || '',
+        industryExperience: registrationData.step4_data?.industryExperience || '',
+        trainingPrograms: registrationData.step4_data?.trainingPrograms || '',
+
+        // Step 5: Achievements (from step5_data JSONB)
+        institutionAwards: registrationData.step5_data?.institutionAwards?.institutionAwards || '',
+        governmentRecognition: registrationData.step5_data?.institutionAwards?.governmentRecognition || '',
+        educationBoardAwards: registrationData.step5_data?.institutionAwards?.educationBoardAwards || '',
+        qualityCertifications: registrationData.step5_data?.institutionAwards?.qualityCertifications || '',
+        mediaRecognition: registrationData.step5_data?.institutionAwards?.mediaRecognition || '',
+        sportsAchievements: registrationData.step5_data?.studentAchievements?.sportsAchievements || '',
+        culturalAchievements: registrationData.step5_data?.studentAchievements?.culturalAchievements || '',
+        academicExcellenceAwards: registrationData.step5_data?.studentAchievements?.academicExcellenceAwards || '',
+        competitionWinners: registrationData.step5_data?.studentAchievements?.competitionWinners || '',
+        alumniSuccessStories: registrationData.step5_data?.successStories?.alumniSuccessStories || '',
+        placementRecords: registrationData.step5_data?.successStories?.placementRecords || '',
+        higherStudiesAdmissions: registrationData.step5_data?.successStories?.higherStudiesAdmissions || '',
+        scholarshipRecipients: registrationData.step5_data?.successStories?.scholarshipRecipients || '',
+
+        // Step 6: Fee Structure (from step6_data JSONB)
+        emiAvailable: registrationData.step6_data?.emiAvailable || 'no',
+        paymentSchedule: registrationData.step6_data?.paymentSchedule || '',
+        latePaymentPenalty: registrationData.step6_data?.latePaymentPenalty || '',
+        scholarshipAvailable: registrationData.step6_data?.scholarshipAvailable || 'no',
+        scholarshipCriteria: registrationData.step6_data?.scholarshipCriteria || '',
+        discountMultipleCourses: registrationData.step6_data?.discountMultipleCourses || '',
+        siblingDiscount: registrationData.step6_data?.siblingDiscount || '',
+        earlyBirdDiscount: registrationData.step6_data?.earlyBirdDiscount || '',
+        educationLoanAssistance: registrationData.step6_data?.educationLoanAssistance || 'no',
+        installmentFacility: registrationData.step6_data?.installmentFacility || 'no',
+        hardshipSupport: registrationData.step6_data?.hardshipSupport || 'no',
+
+        // Step 7: Contact & Communication (direct fields)
+        primaryContactPerson: registrationData.primary_contact_person || '',
+        designation: registrationData.contact_designation || '',
+        directPhoneNumber: registrationData.contact_phone_number || '',
+        emailAddress: registrationData.contact_email_address || '',
+        whatsappNumber: registrationData.whatsapp_number || '',
+        bestTimeToContact: registrationData.best_time_to_contact || '',
+        facebookPageUrl: registrationData.facebook_page_url || '',
+        instagramAccountUrl: registrationData.instagram_account_url || '',
+        youtubeChannelUrl: registrationData.youtube_channel_url || '',
+        linkedinProfileUrl: registrationData.linkedin_profile_url || '',
+        googleMyBusinessUrl: registrationData.google_my_business_url || '',
+        emergencyContactPerson: registrationData.emergency_contact_person || '',
+        localPoliceStationContact: registrationData.local_police_station_contact || '',
+        nearestHospitalContact: registrationData.nearest_hospital_contact || '',
+        fireDepartmentContact: registrationData.fire_department_contact || ''
+      }));
     }
+  }, [registrationData]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handleEditProfile = () => {
-    setShowEditDialog(true);
+  const handleSaveChanges = async () => {
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // First, check if the profile exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('institution_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw new Error(`Failed to check profile: ${checkError.message}`);
+      }
+
+      const profileData = {
+        // Step 1: Basic Information
+        institution_name: formData.institutionName,
+        institution_type: formData.institutionType === 'other' ? formData.otherInstitutionType : formData.institutionType,
+        other_institution_type: formData.institutionType === 'other' ? formData.otherInstitutionType : null,
+        established_year: formData.establishmentYear ? parseInt(formData.establishmentYear) : null,
+        registration_number: formData.registrationNumber,
+        pan_number: formData.panNumber,
+        gst_number: formData.gstNumber,
+        official_email: formData.officialEmail,
+        primary_contact_number: formData.primaryContact,
+        secondary_contact_number: formData.secondaryContact,
+        website_url: formData.websiteUrl,
+        complete_address: formData.completeAddress,
+        city: formData.city,
+        state: formData.state,
+        pin_code: formData.pinCode,
+        landmark: formData.landmark,
+        map_location: formData.mapLocation,
+        owner_director_name: formData.ownerDirectorName,
+        owner_contact_number: formData.ownerContactNumber,
+
+        // Step 2: Facilities (JSONB)
+        step2_data: {
+          totalClassrooms: formData.totalClassrooms,
+          classroomCapacity: formData.classroomCapacity,
+          libraryAvailable: formData.libraryAvailable,
+          computerLabAvailable: formData.computerLabAvailable,
+          wifiAvailable: formData.wifiAvailable,
+          parkingAvailable: formData.parkingAvailable,
+          cafeteriaAvailable: formData.cafeteriaAvailable,
+          airConditioningAvailable: formData.airConditioningAvailable,
+          cctvSecurityAvailable: formData.cctvSecurityAvailable,
+          wheelchairAccessible: formData.wheelchairAccessible,
+          projectorsSmartBoardsAvailable: formData.projectorsSmartBoardsAvailable,
+          audioSystemAvailable: formData.audioSystemAvailable,
+          transportationProvided: formData.transportationProvided,
+          hostelFacility: formData.hostelFacility,
+          studyMaterialProvided: formData.studyMaterialProvided,
+          onlineClasses: formData.onlineClasses,
+          recordedSessions: formData.recordedSessions,
+          mockTestsAssessments: formData.mockTestsAssessments,
+          careerCounseling: formData.careerCounseling,
+          jobPlacementAssistance: formData.jobPlacementAssistance
+        },
+
+        // Step 3: Courses & Programs (JSONB)
+        step3_data: {
+          totalCurrentStudents: formData.totalCurrentStudents,
+          averageBatchSize: formData.averageBatchSize,
+          studentTeacherRatio: formData.studentTeacherRatio,
+          admissionTestRequired: formData.admissionTestRequired,
+          minimumQualification: formData.minimumQualification,
+          ageRestrictions: formData.ageRestrictions,
+          admissionFees: formData.admissionFees,
+          securityDeposit: formData.securityDeposit,
+          refundPolicy: formData.refundPolicy
+        },
+
+        // Step 4: Faculty & Staff (JSONB)
+        step4_data: {
+          totalTeachingStaff: formData.totalTeachingStaff,
+          totalNonTeachingStaff: formData.totalNonTeachingStaff,
+          averageFacultyExperience: formData.averageFacultyExperience,
+          principalDirectorName: formData.principalDirectorName,
+          principalDirectorQualification: formData.principalDirectorQualification,
+          principalDirectorExperience: formData.principalDirectorExperience,
+          principalDirectorBio: formData.principalDirectorBio,
+          phdHolders: formData.phdHolders,
+          postGraduates: formData.postGraduates,
+          graduates: formData.graduates,
+          professionalCertified: formData.professionalCertified,
+          awardsReceived: formData.awardsReceived,
+          publications: formData.publications,
+          industryExperience: formData.industryExperience,
+          trainingPrograms: formData.trainingPrograms
+        },
+
+        // Step 5: Achievements (JSONB)
+        step5_data: {
+          institutionAwards: {
+            institutionAwards: formData.institutionAwards,
+            governmentRecognition: formData.governmentRecognition,
+            educationBoardAwards: formData.educationBoardAwards,
+            qualityCertifications: formData.qualityCertifications,
+            mediaRecognition: formData.mediaRecognition
+          },
+          studentAchievements: {
+            sportsAchievements: formData.sportsAchievements,
+            culturalAchievements: formData.culturalAchievements,
+            academicExcellenceAwards: formData.academicExcellenceAwards,
+            competitionWinners: formData.competitionWinners
+          },
+          successStories: {
+            alumniSuccessStories: formData.alumniSuccessStories,
+            placementRecords: formData.placementRecords,
+            higherStudiesAdmissions: formData.higherStudiesAdmissions,
+            scholarshipRecipients: formData.scholarshipRecipients
+          }
+        },
+
+        // Step 6: Fee Structure (JSONB)
+        step6_data: {
+          emiAvailable: formData.emiAvailable,
+          paymentSchedule: formData.paymentSchedule,
+          latePaymentPenalty: formData.latePaymentPenalty,
+          scholarshipAvailable: formData.scholarshipAvailable,
+          scholarshipCriteria: formData.scholarshipCriteria,
+          discountMultipleCourses: formData.discountMultipleCourses,
+          siblingDiscount: formData.siblingDiscount,
+          earlyBirdDiscount: formData.earlyBirdDiscount,
+          educationLoanAssistance: formData.educationLoanAssistance,
+          installmentFacility: formData.installmentFacility,
+          hardshipSupport: formData.hardshipSupport
+        },
+
+        // Step 7: Contact & Communication (direct fields)
+        primary_contact_person: formData.primaryContactPerson,
+        contact_designation: formData.designation,
+        contact_phone_number: formData.directPhoneNumber,
+        contact_email_address: formData.emailAddress,
+        whatsapp_number: formData.whatsappNumber,
+        best_time_to_contact: formData.bestTimeToContact,
+        facebook_page_url: formData.facebookPageUrl,
+        instagram_account_url: formData.instagramAccountUrl,
+        youtube_channel_url: formData.youtubeChannelUrl,
+        linkedin_profile_url: formData.linkedinProfileUrl,
+        google_my_business_url: formData.googleMyBusinessUrl,
+        emergency_contact_person: formData.emergencyContactPerson,
+        local_police_station_contact: formData.localPoliceStationContact,
+        nearest_hospital_contact: formData.nearestHospitalContact,
+        fire_department_contact: formData.fireDepartmentContact,
+        updated_at: new Date().toISOString()
+      };
+
+      // Use update if profile exists, insert if it doesn't
+      let updateError;
+      if (existingProfile) {
+        // Profile exists, update it
+        const { error } = await supabase
+          .from('institution_profiles')
+          .update(profileData)
+          .eq('user_id', user.id);
+        updateError = error;
+      } else {
+        // Profile doesn't exist, create it
+        const { error } = await supabase
+          .from('institution_profiles')
+          .insert({
+            user_id: user.id,
+            ...profileData
+          });
+        updateError = error;
+      }
+
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        
+        // Handle specific error cases
+        if (updateError.code === '23505') {
+          throw new Error('Profile already exists. Please refresh the page and try again.');
+        } else if (updateError.code === '23503') {
+          throw new Error('Invalid data provided. Please check your inputs and try again.');
+        } else if (updateError.code === '42501') {
+          throw new Error('Permission denied. Please contact support if this issue persists.');
+        } else {
+          throw new Error(`Database error: ${updateError.message}`);
+        }
+      }
+
+      setSuccess('Profile updated successfully!');
+      await refreshData();
+      onRefresh();
+
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to save profile';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.code) {
+        switch (error.code) {
+          case '23505':
+            errorMessage = 'Profile already exists. Please refresh the page and try again.';
+            break;
+          case '23503':
+            errorMessage = 'Invalid data provided. Please check your inputs and try again.';
+            break;
+          case '42501':
+            errorMessage = 'Permission denied. Please contact support if this issue persists.';
+            break;
+          default:
+            errorMessage = `Database error: ${error.message || 'Unknown error'}`;
+        }
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -5221,216 +5679,661 @@ function SettingsDashboard({
           <p className="text-gray-600">Manage your institution profile and settings</p>
           <p className="text-xs text-gray-500 mt-1">Last updated: {lastRefreshTime.toLocaleTimeString()}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => {
-              refreshData();
-              onRefresh();
-            }}
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Refresh'}
-          </Button>
-        </div>
+        <Button
+          onClick={handleSaveChanges}
+          disabled={saving}
+          className="flex items-center gap-2"
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Settings className="h-4 w-4" />
+          )}
+          {saving ? 'Saving...' : 'Save Changes'}
+        </Button>
       </div>
+
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <p className="text-green-800">{success}</p>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="institution">Institution</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="basic">Basic Info</TabsTrigger>
+          <TabsTrigger value="facilities">Facilities</TabsTrigger>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
+          <TabsTrigger value="faculty">Faculty</TabsTrigger>
           <TabsTrigger value="contact">Contact</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-      <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Institution Profile
-                    <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">Manage your institution's basic information</p>
-                </div>
-                <Button onClick={handleEditProfile} size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Profile Overview */}
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage 
-                    src={profileData?.logo_url || ""} 
-                    alt={profileData?.institution_name || "Institution Logo"}
-                  />
-                  <AvatarFallback className="text-lg">
-                    {profileData?.institution_name?.charAt(0) || "I"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    {profileData?.institution_name || "Institution Name"}
-                  </h3>
-                  <p className="text-gray-600">{profileData?.institution_type || "Institution Type"}</p>
-                  <p className="text-sm text-gray-500">
-                    Established: {profileData?.established_year || "N/A"}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="outline">
-                      {profileData?.registration_status || "Not Registered"}
-                    </Badge>
-                    {profileData?.verification_status && (
-                      <Badge className="bg-green-100 text-green-800">
-                        {profileData.verification_status}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Profile Information Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Institution Name</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.institution_name || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Institution Type</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.institution_type || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Registration Number</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.registration_number || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">PAN Number</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.pan_number || "Not provided"}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">GST Number</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.gst_number || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Official Email</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.official_email || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Primary Contact</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.primary_contact_number || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Website</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.website_url ? (
-                        <a 
-                          href={profileData.website_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          {profileData.website_url}
-                        </a>
-                      ) : "Not provided"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-        </CardContent>
-      </Card>
-        </TabsContent>
-
-        {/* Institution Tab */}
-        <TabsContent value="institution" className="space-y-6">
+        {/* Basic Information Tab */}
+        <TabsContent value="basic" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Institution Details
-                <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                Basic Institution Information
               </CardTitle>
-              <p className="text-sm text-gray-600">Manage your institution's detailed information</p>
+              <p className="text-sm text-gray-600">Essential details about your institution</p>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Complete Address</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.complete_address || "Not provided"}
-                    </p>
+                    <Label htmlFor="institutionName">Institution Name *</Label>
+                    <Input
+                      id="institutionName"
+                      value={formData.institutionName}
+                      onChange={(e) => handleInputChange('institutionName', e.target.value)}
+                      placeholder="Enter institution name"
+                    />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">City</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.city || "Not provided"}
-                    </p>
+                    <Label htmlFor="institutionType">Institution Type *</Label>
+                    <Select value={formData.institutionType} onValueChange={(value) => handleInputChange('institutionType', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select institution type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="school">School</SelectItem>
+                        <SelectItem value="college">College</SelectItem>
+                        <SelectItem value="university">University</SelectItem>
+                        <SelectItem value="coaching">Coaching Center</SelectItem>
+                        <SelectItem value="training">Training Institute</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.institutionType === 'other' && (
+                    <div>
+                      <Label htmlFor="otherInstitutionType">Specify Institution Type</Label>
+                      <Input
+                        id="otherInstitutionType"
+                        value={formData.otherInstitutionType}
+                        onChange={(e) => handleInputChange('otherInstitutionType', e.target.value)}
+                        placeholder="Enter institution type"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <Label htmlFor="establishmentYear">Establishment Year *</Label>
+                    <Input
+                      id="establishmentYear"
+                      type="number"
+                      value={formData.establishmentYear}
+                      onChange={(e) => handleInputChange('establishmentYear', e.target.value)}
+                      placeholder="e.g., 1995"
+                    />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">State</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.state || "Not provided"}
-                    </p>
+                    <Label htmlFor="registrationNumber">Registration Number *</Label>
+                    <Input
+                      id="registrationNumber"
+                      value={formData.registrationNumber}
+                      onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
+                      placeholder="Enter registration number"
+                    />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Pin Code</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.pin_code || "Not provided"}
-                    </p>
+                    <Label htmlFor="panNumber">PAN Number *</Label>
+                    <Input
+                      id="panNumber"
+                      value={formData.panNumber}
+                      onChange={(e) => handleInputChange('panNumber', e.target.value)}
+                      placeholder="Enter PAN number"
+                    />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Landmark</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.landmark || "Not provided"}
-                    </p>
+                    <Label htmlFor="gstNumber">GST Number</Label>
+                    <Input
+                      id="gstNumber"
+                      value={formData.gstNumber}
+                      onChange={(e) => handleInputChange('gstNumber', e.target.value)}
+                      placeholder="Enter GST number"
+                    />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Map Location</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.map_location || "Not provided"}
-                    </p>
+                    <Label htmlFor="officialEmail">Official Email *</Label>
+                    <Input
+                      id="officialEmail"
+                      type="email"
+                      value={formData.officialEmail}
+                      onChange={(e) => handleInputChange('officialEmail', e.target.value)}
+                      placeholder="Enter official email"
+                    />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Owner/Director Name</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.owner_director_name || "Not provided"}
-                    </p>
+                    <Label htmlFor="primaryContact">Primary Contact *</Label>
+                    <Input
+                      id="primaryContact"
+                      value={formData.primaryContact}
+                      onChange={(e) => handleInputChange('primaryContact', e.target.value)}
+                      placeholder="Enter primary contact number"
+                    />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Owner Contact</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.owner_contact_number || "Not provided"}
-                    </p>
+                    <Label htmlFor="secondaryContact">Secondary Contact</Label>
+                    <Input
+                      id="secondaryContact"
+                      value={formData.secondaryContact}
+                      onChange={(e) => handleInputChange('secondaryContact', e.target.value)}
+                      placeholder="Enter secondary contact number"
+                    />
                   </div>
+                  <div>
+                    <Label htmlFor="websiteUrl">Website URL</Label>
+                    <Input
+                      id="websiteUrl"
+                      value={formData.websiteUrl}
+                      onChange={(e) => handleInputChange('websiteUrl', e.target.value)}
+                      placeholder="Enter website URL"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Address Section */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900">Address Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="completeAddress">Complete Address *</Label>
+                    <Textarea
+                      id="completeAddress"
+                      value={formData.completeAddress}
+                      onChange={(e) => handleInputChange('completeAddress', e.target.value)}
+                      placeholder="Enter complete address"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="city">City *</Label>
+                      <Input
+                        id="city"
+                        value={formData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        placeholder="Enter city"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">State *</Label>
+                      <Input
+                        id="state"
+                        value={formData.state}
+                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        placeholder="Enter state"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pinCode">Pin Code *</Label>
+                      <Input
+                        id="pinCode"
+                        value={formData.pinCode}
+                        onChange={(e) => handleInputChange('pinCode', e.target.value)}
+                        placeholder="Enter pin code"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="landmark">Landmark</Label>
+                    <Input
+                      id="landmark"
+                      value={formData.landmark}
+                      onChange={(e) => handleInputChange('landmark', e.target.value)}
+                      placeholder="Enter nearby landmark"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="mapLocation">Google Maps Location</Label>
+                    <Input
+                      id="mapLocation"
+                      value={formData.mapLocation}
+                      onChange={(e) => handleInputChange('mapLocation', e.target.value)}
+                      placeholder="Enter Google Maps link"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Owner/Director Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900">Owner/Director Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="ownerDirectorName">Owner/Director Name *</Label>
+                    <Input
+                      id="ownerDirectorName"
+                      value={formData.ownerDirectorName}
+                      onChange={(e) => handleInputChange('ownerDirectorName', e.target.value)}
+                      placeholder="Enter owner/director name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ownerContactNumber">Owner Contact Number *</Label>
+                    <Input
+                      id="ownerContactNumber"
+                      value={formData.ownerContactNumber}
+                      onChange={(e) => handleInputChange('ownerContactNumber', e.target.value)}
+                      placeholder="Enter owner contact number"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Facilities Tab */}
+        <TabsContent value="facilities" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Facilities & Infrastructure
+              </CardTitle>
+              <p className="text-sm text-gray-600">Information about your institution's facilities</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="totalClassrooms">Total Classrooms</Label>
+                    <Input
+                      id="totalClassrooms"
+                      type="number"
+                      value={formData.totalClassrooms}
+                      onChange={(e) => handleInputChange('totalClassrooms', e.target.value)}
+                      placeholder="Enter number of classrooms"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="classroomCapacity">Classroom Capacity</Label>
+                    <Input
+                      id="classroomCapacity"
+                      type="number"
+                      value={formData.classroomCapacity}
+                      onChange={(e) => handleInputChange('classroomCapacity', e.target.value)}
+                      placeholder="Enter average classroom capacity"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Basic Facilities</Label>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'libraryAvailable', label: 'Library' },
+                        { key: 'computerLabAvailable', label: 'Computer Lab' },
+                        { key: 'wifiAvailable', label: 'WiFi' },
+                        { key: 'parkingAvailable', label: 'Parking' },
+                        { key: 'cafeteriaAvailable', label: 'Cafeteria' },
+                        { key: 'airConditioningAvailable', label: 'Air Conditioning' },
+                        { key: 'cctvSecurityAvailable', label: 'CCTV Security' },
+                        { key: 'wheelchairAccessible', label: 'Wheelchair Accessible' },
+                        { key: 'projectorsSmartBoardsAvailable', label: 'Projectors/Smart Boards' },
+                        { key: 'audioSystemAvailable', label: 'Audio System' }
+                      ].map((facility) => (
+                        <div key={facility.key} className="flex items-center justify-between">
+                          <Label className="text-sm">{facility.label}</Label>
+                          <Select 
+                            value={formData[facility.key as keyof typeof formData]} 
+                            onValueChange={(value) => handleInputChange(facility.key, value)}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label>Additional Services</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { key: 'transportationProvided', label: 'Transportation Provided' },
+                    { key: 'hostelFacility', label: 'Hostel Facility' },
+                    { key: 'studyMaterialProvided', label: 'Study Material Provided' },
+                    { key: 'onlineClasses', label: 'Online Classes' },
+                    { key: 'recordedSessions', label: 'Recorded Sessions' },
+                    { key: 'mockTestsAssessments', label: 'Mock Tests & Assessments' },
+                    { key: 'careerCounseling', label: 'Career Counseling' },
+                    { key: 'jobPlacementAssistance', label: 'Job Placement Assistance' }
+                  ].map((service) => (
+                    <div key={service.key} className="flex items-center justify-between">
+                      <Label className="text-sm">{service.label}</Label>
+                      <Select 
+                        value={formData[service.key as keyof typeof formData]} 
+                        onValueChange={(value) => handleInputChange(service.key, value)}
+                      >
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Courses Tab */}
+        <TabsContent value="courses" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Courses & Programs
+              </CardTitle>
+              <p className="text-sm text-gray-600">Information about your courses and programs</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="totalCurrentStudents">Total Current Students</Label>
+                    <Input
+                      id="totalCurrentStudents"
+                      type="number"
+                      value={formData.totalCurrentStudents}
+                      onChange={(e) => handleInputChange('totalCurrentStudents', e.target.value)}
+                      placeholder="Enter total current students"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="averageBatchSize">Average Batch Size</Label>
+                    <Input
+                      id="averageBatchSize"
+                      type="number"
+                      value={formData.averageBatchSize}
+                      onChange={(e) => handleInputChange('averageBatchSize', e.target.value)}
+                      placeholder="Enter average batch size"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="studentTeacherRatio">Student-Teacher Ratio</Label>
+                    <Input
+                      id="studentTeacherRatio"
+                      value={formData.studentTeacherRatio}
+                      onChange={(e) => handleInputChange('studentTeacherRatio', e.target.value)}
+                      placeholder="e.g., 30:1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="admissionFees">Admission Fees (₹)</Label>
+                    <Input
+                      id="admissionFees"
+                      type="number"
+                      value={formData.admissionFees}
+                      onChange={(e) => handleInputChange('admissionFees', e.target.value)}
+                      placeholder="Enter admission fees"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="securityDeposit">Security Deposit (₹)</Label>
+                    <Input
+                      id="securityDeposit"
+                      type="number"
+                      value={formData.securityDeposit}
+                      onChange={(e) => handleInputChange('securityDeposit', e.target.value)}
+                      placeholder="Enter security deposit"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="minimumQualification">Minimum Qualification</Label>
+                    <Input
+                      id="minimumQualification"
+                      value={formData.minimumQualification}
+                      onChange={(e) => handleInputChange('minimumQualification', e.target.value)}
+                      placeholder="Enter minimum qualification required"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="ageRestrictions">Age Restrictions</Label>
+                  <Input
+                    id="ageRestrictions"
+                    value={formData.ageRestrictions}
+                    onChange={(e) => handleInputChange('ageRestrictions', e.target.value)}
+                    placeholder="Enter age restrictions"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="refundPolicy">Refund Policy</Label>
+                  <Textarea
+                    id="refundPolicy"
+                    value={formData.refundPolicy}
+                    onChange={(e) => handleInputChange('refundPolicy', e.target.value)}
+                    placeholder="Enter refund policy details"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label>Admission Test Required</Label>
+                  <Select 
+                    value={formData.admissionTestRequired} 
+                    onValueChange={(value) => handleInputChange('admissionTestRequired', value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Faculty Tab */}
+        <TabsContent value="faculty" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Faculty & Staff Information
+              </CardTitle>
+              <p className="text-sm text-gray-600">Details about your teaching and non-teaching staff</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="totalTeachingStaff">Total Teaching Staff</Label>
+                    <Input
+                      id="totalTeachingStaff"
+                      type="number"
+                      value={formData.totalTeachingStaff}
+                      onChange={(e) => handleInputChange('totalTeachingStaff', e.target.value)}
+                      placeholder="Enter number of teaching staff"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="totalNonTeachingStaff">Total Non-Teaching Staff</Label>
+                    <Input
+                      id="totalNonTeachingStaff"
+                      type="number"
+                      value={formData.totalNonTeachingStaff}
+                      onChange={(e) => handleInputChange('totalNonTeachingStaff', e.target.value)}
+                      placeholder="Enter number of non-teaching staff"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="averageFacultyExperience">Average Faculty Experience (years)</Label>
+                    <Input
+                      id="averageFacultyExperience"
+                      value={formData.averageFacultyExperience}
+                      onChange={(e) => handleInputChange('averageFacultyExperience', e.target.value)}
+                      placeholder="Enter average faculty experience"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="phdHolders">PhD Holders</Label>
+                    <Input
+                      id="phdHolders"
+                      type="number"
+                      value={formData.phdHolders}
+                      onChange={(e) => handleInputChange('phdHolders', e.target.value)}
+                      placeholder="Enter number of PhD holders"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="postGraduates">Post Graduates</Label>
+                    <Input
+                      id="postGraduates"
+                      type="number"
+                      value={formData.postGraduates}
+                      onChange={(e) => handleInputChange('postGraduates', e.target.value)}
+                      placeholder="Enter number of post graduates"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="graduates">Graduates</Label>
+                    <Input
+                      id="graduates"
+                      type="number"
+                      value={formData.graduates}
+                      onChange={(e) => handleInputChange('graduates', e.target.value)}
+                      placeholder="Enter number of graduates"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900">Principal/Director Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="principalDirectorName">Principal/Director Name</Label>
+                    <Input
+                      id="principalDirectorName"
+                      value={formData.principalDirectorName}
+                      onChange={(e) => handleInputChange('principalDirectorName', e.target.value)}
+                      placeholder="Enter principal/director name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="principalDirectorQualification">Qualification</Label>
+                    <Input
+                      id="principalDirectorQualification"
+                      value={formData.principalDirectorQualification}
+                      onChange={(e) => handleInputChange('principalDirectorQualification', e.target.value)}
+                      placeholder="Enter qualification"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="principalDirectorExperience">Experience (years)</Label>
+                  <Input
+                    id="principalDirectorExperience"
+                    value={formData.principalDirectorExperience}
+                    onChange={(e) => handleInputChange('principalDirectorExperience', e.target.value)}
+                    placeholder="Enter experience in years"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="principalDirectorBio">Bio</Label>
+                  <Textarea
+                    id="principalDirectorBio"
+                    value={formData.principalDirectorBio}
+                    onChange={(e) => handleInputChange('principalDirectorBio', e.target.value)}
+                    placeholder="Enter principal/director bio"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900">Additional Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="professionalCertified">Professional Certified</Label>
+                    <Input
+                      id="professionalCertified"
+                      type="number"
+                      value={formData.professionalCertified}
+                      onChange={(e) => handleInputChange('professionalCertified', e.target.value)}
+                      placeholder="Enter number of professional certified staff"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="awardsReceived">Awards Received</Label>
+                    <Input
+                      id="awardsReceived"
+                      value={formData.awardsReceived}
+                      onChange={(e) => handleInputChange('awardsReceived', e.target.value)}
+                      placeholder="Enter awards received"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="publications">Publications</Label>
+                  <Input
+                    id="publications"
+                    value={formData.publications}
+                    onChange={(e) => handleInputChange('publications', e.target.value)}
+                    placeholder="Enter publications details"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="industryExperience">Industry Experience</Label>
+                  <Input
+                    id="industryExperience"
+                    value={formData.industryExperience}
+                    onChange={(e) => handleInputChange('industryExperience', e.target.value)}
+                    placeholder="Enter industry experience details"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="trainingPrograms">Training Programs</Label>
+                  <Input
+                    id="trainingPrograms"
+                    value={formData.trainingPrograms}
+                    onChange={(e) => handleInputChange('trainingPrograms', e.target.value)}
+                    placeholder="Enter training programs conducted"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -5443,116 +6346,176 @@ function SettingsDashboard({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Phone className="h-5 w-5" />
-                Contact Information
-                <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                Contact & Communication
               </CardTitle>
-              <p className="text-sm text-gray-600">Manage your contact details and communication preferences</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Primary Contact Number</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.primary_contact_number || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Secondary Contact Number</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.secondary_contact_number || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Official Email</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.official_email || "Not provided"}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Owner Contact Number</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.owner_contact_number || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Website URL</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {profileData?.website_url ? (
-                        <a 
-                          href={profileData.website_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          {profileData.website_url}
-                        </a>
-                      ) : "Not provided"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Preferences Tab */}
-        <TabsContent value="preferences" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Preferences & Settings
-                <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              </CardTitle>
-              <p className="text-sm text-gray-600">Manage your application preferences and settings</p>
+              <p className="text-sm text-gray-600">Contact information and communication preferences</p>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <h4 className="text-lg font-medium text-gray-900">Primary Contact</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Email Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive email notifications for important updates</p>
+                    <Label htmlFor="primaryContactPerson">Primary Contact Person</Label>
+                    <Input
+                      id="primaryContactPerson"
+                      value={formData.primaryContactPerson}
+                      onChange={(e) => handleInputChange('primaryContactPerson', e.target.value)}
+                      placeholder="Enter primary contact person name"
+                    />
                   </div>
-                  <Checkbox defaultChecked />
+                  <div>
+                    <Label htmlFor="designation">Designation</Label>
+                    <Input
+                      id="designation"
+                      value={formData.designation}
+                      onChange={(e) => handleInputChange('designation', e.target.value)}
+                      placeholder="Enter designation"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">SMS Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive SMS notifications for urgent matters</p>
+                    <Label htmlFor="directPhoneNumber">Direct Phone Number</Label>
+                    <Input
+                      id="directPhoneNumber"
+                      value={formData.directPhoneNumber}
+                      onChange={(e) => handleInputChange('directPhoneNumber', e.target.value)}
+                      placeholder="Enter direct phone number"
+                    />
                   </div>
-                  <Checkbox defaultChecked />
+                  <div>
+                    <Label htmlFor="emailAddress">Email Address</Label>
+                    <Input
+                      id="emailAddress"
+                      type="email"
+                      value={formData.emailAddress}
+                      onChange={(e) => handleInputChange('emailAddress', e.target.value)}
+                      placeholder="Enter email address"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Marketing Communications</Label>
-                    <p className="text-sm text-gray-500">Receive marketing emails and promotional content</p>
+                    <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
+                    <Input
+                      id="whatsappNumber"
+                      value={formData.whatsappNumber}
+                      onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
+                      placeholder="Enter WhatsApp number"
+                    />
                   </div>
-                  <Checkbox />
+                  <div>
+                    <Label htmlFor="bestTimeToContact">Best Time to Contact</Label>
+                    <Input
+                      id="bestTimeToContact"
+                      value={formData.bestTimeToContact}
+                      onChange={(e) => handleInputChange('bestTimeToContact', e.target.value)}
+                      placeholder="e.g., 9 AM - 5 PM"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900">Social Media & Online Presence</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Data Sharing</Label>
-                    <p className="text-sm text-gray-500">Allow sharing of anonymized data for platform improvement</p>
+                    <Label htmlFor="facebookPageUrl">Facebook Page URL</Label>
+                    <Input
+                      id="facebookPageUrl"
+                      value={formData.facebookPageUrl}
+                      onChange={(e) => handleInputChange('facebookPageUrl', e.target.value)}
+                      placeholder="Enter Facebook page URL"
+                    />
                   </div>
-                  <Checkbox defaultChecked />
+                  <div>
+                    <Label htmlFor="instagramAccountUrl">Instagram Account URL</Label>
+                    <Input
+                      id="instagramAccountUrl"
+                      value={formData.instagramAccountUrl}
+                      onChange={(e) => handleInputChange('instagramAccountUrl', e.target.value)}
+                      placeholder="Enter Instagram account URL"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="youtubeChannelUrl">YouTube Channel URL</Label>
+                    <Input
+                      id="youtubeChannelUrl"
+                      value={formData.youtubeChannelUrl}
+                      onChange={(e) => handleInputChange('youtubeChannelUrl', e.target.value)}
+                      placeholder="Enter YouTube channel URL"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="linkedinProfileUrl">LinkedIn Profile URL</Label>
+                    <Input
+                      id="linkedinProfileUrl"
+                      value={formData.linkedinProfileUrl}
+                      onChange={(e) => handleInputChange('linkedinProfileUrl', e.target.value)}
+                      placeholder="Enter LinkedIn profile URL"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="googleMyBusinessUrl">Google My Business URL</Label>
+                  <Input
+                    id="googleMyBusinessUrl"
+                    value={formData.googleMyBusinessUrl}
+                    onChange={(e) => handleInputChange('googleMyBusinessUrl', e.target.value)}
+                    placeholder="Enter Google My Business URL"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900">Emergency Contacts</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="emergencyContactPerson">Emergency Contact Person</Label>
+                    <Input
+                      id="emergencyContactPerson"
+                      value={formData.emergencyContactPerson}
+                      onChange={(e) => handleInputChange('emergencyContactPerson', e.target.value)}
+                      placeholder="Enter emergency contact person"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="localPoliceStationContact">Local Police Station Contact</Label>
+                    <Input
+                      id="localPoliceStationContact"
+                      value={formData.localPoliceStationContact}
+                      onChange={(e) => handleInputChange('localPoliceStationContact', e.target.value)}
+                      placeholder="Enter police station contact"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="nearestHospitalContact">Nearest Hospital Contact</Label>
+                    <Input
+                      id="nearestHospitalContact"
+                      value={formData.nearestHospitalContact}
+                      onChange={(e) => handleInputChange('nearestHospitalContact', e.target.value)}
+                      placeholder="Enter hospital contact"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fireDepartmentContact">Fire Department Contact</Label>
+                    <Input
+                      id="fireDepartmentContact"
+                      value={formData.fireDepartmentContact}
+                      onChange={(e) => handleInputChange('fireDepartmentContact', e.target.value)}
+                      placeholder="Enter fire department contact"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Edit Profile Dialog */}
-      {showEditDialog && (
-        <InstitutionProfileEditDialog
-          profile={profileData}
-          onUpdate={handleProfileUpdate}
-          onClose={() => setShowEditDialog(false)}
-        />
-      )}
     </div>
   );
 }
