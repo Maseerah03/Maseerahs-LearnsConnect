@@ -4043,164 +4043,133 @@ function AdmissionsDashboard({
   lastRefreshTime: Date;
   onRefresh: () => void;
 }) {
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
-  const [admissionsData, setAdmissionsData] = useState({
-    applications: [],
-    stats: {
-      total: 0,
-      pending: 0,
-      approved: 0,
-      rejected: 0,
-      thisMonth: 0
-    }
-  });
+  const [admissionsData, setAdmissionsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Real data fetching from database
+  // Fetch student admissions data on component mount
   useEffect(() => {
-    loadAdmissionsData();
-  }, [selectedStatus]);
+    fetchStudentAdmissions();
+  }, []);
 
-  const loadAdmissionsData = async () => {
-    setIsLoading(true);
+  const fetchStudentAdmissions = async () => {
     try {
+      setLoading(true);
+      setError(null);
+
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        console.error('User not authenticated');
-        setIsLoading(false);
+        throw new Error('User not authenticated');
+      }
+
+      console.log('Fetching student admissions for institution:', user.id);
+
+      // First, get the institution's courses
+      const { data: institutionCourses, error: coursesError } = await supabase
+        .from('institution_courses')
+        .select('id, title, description, category, institution_id')
+        .eq('institution_id', user.id);
+
+      if (coursesError) {
+        console.error('Error fetching institution courses:', coursesError);
+        throw new Error('Failed to fetch institution courses');
+      }
+
+      if (!institutionCourses || institutionCourses.length === 0) {
+        console.log('No courses found for this institution');
+        setAdmissionsData([]);
         return;
       }
 
-      // Fetch admissions data from database
-      const [applications, stats] = await Promise.all([
-        fetchApplications(user.id),
-        fetchAdmissionsStats(user.id)
-      ]);
+      const courseIds = institutionCourses.map(course => course.id);
 
-      setAdmissionsData({
-        applications,
-        stats
+      // Then fetch enrollments for these courses
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from('course_enrollments')
+        .select(`
+          id,
+          student_id,
+          course_id,
+          status,
+          enrolled_at,
+          created_at
+        `)
+        .in('course_id', courseIds)
+        .eq('status', 'enrolled')
+        .order('enrolled_at', { ascending: false });
+
+      if (enrollmentError) {
+        console.error('Error fetching enrollments:', enrollmentError);
+        throw new Error('Failed to fetch student enrollments');
+      }
+
+      // Filter out self-enrollments (institution enrolling in their own course)
+      const validEnrollments = (enrollmentData || []).filter(e => e.student_id !== user.id);
+
+      // Fetch student profiles for the enrolled students
+      const studentIds = [...new Set(validEnrollments?.map(e => e.student_id) || [])];
+      let studentProfiles = [];
+      
+      if (studentIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role, created_at')
+          .in('id', studentIds);
+
+        if (profilesError) {
+          console.error('Error fetching student profiles:', profilesError);
+        } else {
+          studentProfiles = profilesData || [];
+        }
+      }
+
+      // Combine enrollment data with student profiles and course details
+      const enrichedAdmissions = (validEnrollments || []).map(enrollment => {
+        const studentProfile = studentProfiles.find(profile => profile.id === enrollment.student_id);
+        const courseDetails = institutionCourses.find(course => course.id === enrollment.course_id);
+        
+        return {
+          id: enrollment.id,
+          studentName: studentProfile?.full_name || `Student ${enrollment.student_id.slice(0, 8)}...`,
+          course: courseDetails?.title || 'Unknown Course',
+          dateOfAdmission: enrollment.enrolled_at || enrollment.created_at,
+          status: enrollment.status === 'enrolled' ? 'Active' : 'Pending'
+        };
       });
 
-    } catch (error) {
-      console.error('Error loading admissions data:', error);
+      setAdmissionsData(enrichedAdmissions);
+
+    } catch (err) {
+      console.error('Error in fetchStudentAdmissions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch student admissions');
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch applications data
-  const fetchApplications = async (userId: string) => {
-    try {
-      // For now, we'll create a mock structure since admissions table might not exist
-      // In real implementation, this would query an admissions/applications table
-      const { data: courses, error: coursesError } = await supabase
-        .from('courses')
-        .select('id, title, created_at')
-        .eq('tutor_id', userId);
-
-      if (coursesError) {
-        console.error('Error fetching courses for admissions:', coursesError);
-        return [];
-      }
-
-      // Mock applications based on courses (in real implementation, this would be actual applications)
-      const mockApplications = (courses || []).map((course, index) => ({
-        id: `app_${course.id}_${index}`,
-        studentName: `Student ${index + 1}`,
-        studentEmail: `student${index + 1}@example.com`,
-        courseName: course.title,
-        appliedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: ['pending', 'approved', 'rejected'][Math.floor(Math.random() * 3)],
-        documents: ['Transcript', 'ID Copy', 'Application Form'],
-        notes: `Application for ${course.title}`,
-        priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)]
-      }));
-
-      // Filter by status if not 'all'
-      if (selectedStatus !== 'all') {
-        return mockApplications.filter(app => app.status === selectedStatus);
-      }
-
-      return mockApplications;
-    } catch (error) {
-      console.error('Error in fetchApplications:', error);
-      return [];
-    }
-  };
-
-  // Fetch admissions statistics
-  const fetchAdmissionsStats = async (userId: string) => {
-    try {
-      const applications = await fetchApplications(userId);
-      
-      const stats = {
-        total: applications.length,
-        pending: applications.filter(app => app.status === 'pending').length,
-        approved: applications.filter(app => app.status === 'approved').length,
-        rejected: applications.filter(app => app.status === 'rejected').length,
-        thisMonth: applications.filter(app => {
-          const appDate = new Date(app.appliedDate);
-          const now = new Date();
-          return appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
-        }).length
-      };
-
-      return stats;
-    } catch (error) {
-      console.error('Error in fetchAdmissionsStats:', error);
-      return {
-        total: 0,
-        pending: 0,
-        approved: 0,
-        rejected: 0,
-        thisMonth: 0
-      };
-    }
-  };
-
-  const handleStatusChange = async (applicationId: string, newStatus: string) => {
-    try {
-      // In real implementation, this would update the database
-      console.log(`Updating application ${applicationId} to status: ${newStatus}`);
-      
-      // Update local state
-      setAdmissionsData(prev => ({
-        ...prev,
-        applications: prev.applications.map(app => 
-          app.id === applicationId ? { ...app, status: newStatus } : app
-        )
-      }));
-
-      // Refresh stats
-      const stats = await fetchAdmissionsStats('current_user');
-      setAdmissionsData(prev => ({
-        ...prev,
-        stats
-      }));
-
-    } catch (error) {
-      console.error('Error updating application status:', error);
+      setLoading(false);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'Active': return 'bg-green-100 text-green-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Inactive': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleViewDetails = (studentId: string) => {
+    const student = admissionsData.find(s => s.id === studentId);
+    if (student) {
+      setSelectedStudent(student);
+      setShowDetailsModal(true);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchStudentAdmissions();
+    onRefresh();
   };
 
   return (
@@ -4221,220 +4190,97 @@ function AdmissionsDashboard({
           <p className="text-xs text-gray-500 mt-1">Last updated: {lastRefreshTime.toLocaleTimeString()}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Applications</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
           <Button
-            onClick={() => {
-              loadAdmissionsData();
-              onRefresh();
-            }}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={loading}
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Refresh'}
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-      <Card>
-        <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Total Applications</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : admissionsData.stats.total}
-                </p>
-                <p className="text-sm text-gray-500">All time</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : admissionsData.stats.pending}
-                </p>
-                <p className="text-sm text-gray-500">Awaiting review</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Approved</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : admissionsData.stats.approved}
-                </p>
-                <p className="text-sm text-gray-500">Accepted</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Rejected</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : admissionsData.stats.rejected}
-                </p>
-                <p className="text-sm text-gray-500">Not accepted</p>
-              </div>
-              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <X className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : admissionsData.stats.thisMonth}
-                </p>
-                <p className="text-sm text-gray-500">New applications</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Applications Table */}
+      {/* Admissions Table */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Applications
+                Student Admissions
                 <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
               </CardTitle>
-              <p className="text-sm text-gray-600">Student applications and their status</p>
+              <p className="text-sm text-gray-600">List of all student admissions and their status</p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <p className="text-gray-500">Loading applications...</p>
+              <p className="text-gray-500">Loading admissions data...</p>
             </div>
-          ) : admissionsData.applications.length > 0 ? (
+          ) : error ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <p className="text-red-600 mb-2">Error loading admissions data</p>
+              <p className="text-sm text-gray-500">{error}</p>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                size="sm"
+                className="mt-4"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : admissionsData.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Student</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Student Name</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Course</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Applied Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Date of Admission</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Priority</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {admissionsData.applications.map((application) => (
-                    <tr key={application.id} className="border-b hover:bg-gray-50">
+                  {admissionsData.map((student) => (
+                    <tr key={student.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium text-gray-900">{application.studentName}</p>
-                          <p className="text-sm text-gray-500">{application.studentEmail}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600">
+                              {student.studentName.split(' ').map(n => n[0]).join('')}
+                            </span>
+                          </div>
+                          <span className="font-medium text-gray-900">{student.studentName}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-medium">{application.courseName}</td>
+                      <td className="py-3 px-4 font-medium text-gray-900">{student.course}</td>
                       <td className="py-3 px-4 text-gray-600">
-                        {new Date(application.appliedDate).toLocaleDateString()}
+                        {new Date(student.dateOfAdmission).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4">
-                        <Badge className={getStatusColor(application.status)}>
-                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                        <Badge className={getStatusColor(student.status)}>
+                          {student.status}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge className={getPriorityColor(application.priority)}>
-                          {application.priority.charAt(0).toUpperCase() + application.priority.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          {application.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusChange(application.id, 'approved')}
-                                className="text-green-600 hover:text-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusChange(application.id, 'rejected')}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          <Button size="sm" variant="ghost">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(student.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -4444,43 +4290,119 @@ function AdmissionsDashboard({
           ) : (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No applications found</p>
+              <p className="text-gray-500">No admissions found</p>
               <p className="text-sm text-gray-400 mt-1">
-                {selectedStatus === 'all' 
-                  ? 'Applications will appear here when students apply'
-                  : `No ${selectedStatus} applications found`
-                }
+                Students will appear here when they enroll in your courses
               </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-              <p className="text-sm text-gray-600">Common admission management tasks</p>
+      {/* Student Details Modal */}
+      {selectedStudent && (
+        <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Student Details</DialogTitle>
+              <DialogDescription>
+                Detailed information about {selectedStudent.studentName}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              {/* Student Header */}
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-xl font-medium text-blue-600">
+                    {selectedStudent.studentName.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{selectedStudent.studentName}</h3>
+                  <p className="text-gray-600">{selectedStudent.course}</p>
+                  <Badge className={getStatusColor(selectedStudent.status)}>
+                    {selectedStudent.status}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Student Information Grid */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Student Name</Label>
+                  <p className="text-sm text-gray-900 mt-1">{selectedStudent.studentName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Course</Label>
+                  <p className="text-sm text-gray-900 mt-1">{selectedStudent.course}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Date of Admission</Label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {new Date(selectedStudent.dateOfAdmission).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Status</Label>
+                  <div className="mt-1">
+                    <Badge className={getStatusColor(selectedStudent.status)}>
+                      {selectedStudent.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Enrollment ID</Label>
+                  <p className="text-sm text-gray-900 mt-1 font-mono">{selectedStudent.id}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Days Since Admission</Label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {Math.floor((new Date().getTime() - new Date(selectedStudent.dateOfAdmission).getTime()) / (1000 * 60 * 60 * 24))} days
+                  </p>
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              <div className="border-t pt-6">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Additional Information</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-sm font-medium text-gray-600">Admission Date</span>
+                    <span className="text-sm text-gray-900">
+                      {new Date(selectedStudent.dateOfAdmission).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-sm font-medium text-gray-600">Enrollment Status</span>
+                    <Badge className={getStatusColor(selectedStudent.status)}>
+                      {selectedStudent.status}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm font-medium text-gray-600">Course Duration</span>
+                    <span className="text-sm text-gray-900">Ongoing</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Applications
-              </Button>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Application
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
