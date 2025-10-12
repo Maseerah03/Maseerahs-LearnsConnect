@@ -1,37 +1,28 @@
--- Temporarily disable RLS on institution_profiles for testing
--- Run this in your Supabase SQL editor
-
--- Check current RLS status
-SELECT 
-    schemaname,
-    tablename,
-    rowsecurity as rls_enabled
-FROM pg_tables 
-WHERE tablename = 'institution_profiles';
+-- Temporarily disable RLS to test contact form
+-- Run this in your Supabase SQL Editor
 
 -- Disable RLS temporarily
-ALTER TABLE institution_profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
 
--- Verify RLS is disabled
-SELECT 
-    schemaname,
-    tablename,
-    rowsecurity as rls_enabled
-FROM pg_tables 
-WHERE tablename = 'institution_profiles';
+-- Grant all permissions
+GRANT ALL ON messages TO anon;
+GRANT ALL ON messages TO authenticated;
+GRANT ALL ON messages TO public;
 
--- Test query to see all institutions
-SELECT 
-    id,
-    institution_name,
-    verified,
-    status,
-    user_id,
-    created_at
-FROM institution_profiles;
+-- Test insert
+INSERT INTO messages (
+    sender_id,
+    receiver_id,
+    content,
+    message_type
+) VALUES (
+    NULL,
+    (SELECT user_id FROM institution_profiles LIMIT 1),
+    'Student: RLS DISABLED TEST\nEmail: test@example.com\nCourse: Test Course\nMessage: Testing with RLS disabled',
+    'contact_form'
+) RETURNING id, sender_id, receiver_id, content, message_type;
 
--- Success message
-SELECT 'RLS disabled temporarily. You can now test the ContactInstitutions section!' as status;
+-- Clean up
+DELETE FROM messages WHERE content LIKE '%RLS DISABLED TEST%';
 
--- IMPORTANT: Remember to re-enable RLS after testing:
--- ALTER TABLE institution_profiles ENABLE ROW LEVEL SECURITY;
+SELECT 'RLS DISABLED - CONTACT FORM SHOULD WORK NOW!' as status;

@@ -48,13 +48,14 @@ import {
   EyeIcon,
   Phone,
   DollarSign,
+  Calendar,
+  RefreshCw,
   BarChart3,
   Activity,
   GraduationCap,
   CreditCard,
   ThumbsUp,
   Edit3,
-  Calendar,
   UserCheck,
   FileText,
   Menu,
@@ -70,7 +71,6 @@ import {
   Edit3 as Edit,
   DollarSign as DollarSignIcon,
   X,
-  RefreshCw,
   TrendingUp,
   PieChart,
   Download,
@@ -1406,6 +1406,9 @@ function InquiriesDashboard({
         return;
       }
 
+      console.log('Current user:', user);
+      console.log('User ID:', user.id);
+
       // Fetch inquiries data from database
       const [inquiries, stats] = await Promise.all([
         fetchInquiries(user.id),
@@ -1424,15 +1427,19 @@ function InquiriesDashboard({
     }
   };
 
-  // Fetch inquiries data from institution_student_enquiries table
+  // Fetch inquiries data from messages table
   const fetchInquiries = async (userId: string) => {
     try {
-      // Fetch real inquiries from institution_student_enquiries table
+      console.log('Fetching inquiries for user ID:', userId);
+      
+      // Fetch real inquiries from student_inquiries table
       const { data: inquiriesData, error: inquiriesError } = await supabase
-        .from('institution_student_enquiries')
+        .from('student_inquiries')
         .select('*')
         .eq('institution_id', userId)
         .order('created_at', { ascending: false });
+
+      console.log('Inquiries query result:', { inquiriesData, inquiriesError });
 
       if (inquiriesError) {
         console.error('Error fetching inquiries:', inquiriesError);
@@ -1444,7 +1451,7 @@ function InquiriesDashboard({
         id: inquiry.id,
         studentName: inquiry.student_name,
         studentEmail: inquiry.student_email,
-        studentPhone: inquiry.student_phone || '',
+        studentPhone: '',
         courseName: inquiry.course_interest,
         inquiryDate: inquiry.created_at,
         status: inquiry.status,
@@ -1509,7 +1516,7 @@ function InquiriesDashboard({
     try {
       // Update the status in the database
       const { error } = await supabase
-        .from('institution_student_enquiries')
+        .from('student_inquiries')
         .update({ status: newStatus })
         .eq('id', inquiryId);
 
@@ -1604,7 +1611,188 @@ function InquiriesDashboard({
   );
 
   return (
-    <div></div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Student Inquiries</h2>
+          <p className="text-muted-foreground">Manage inquiries from potential students</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={loadInquiriesData}
+          disabled={isLoading}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Loading...' : 'Refresh'}
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Inquiries</p>
+                <p className="text-2xl font-bold">{inquiriesData.stats.total}</p>
+              </div>
+              <MessageSquare className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">New Inquiries</p>
+                <p className="text-2xl font-bold">{inquiriesData.stats.new}</p>
+              </div>
+              <Bell className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">This Month</p>
+                <p className="text-2xl font-bold">{inquiriesData.stats.thisMonth}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Unpaid</p>
+                <p className="text-2xl font-bold">{inquiriesData.stats.unpaid}</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <Input
+            placeholder="Search inquiries..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="new">New</SelectItem>
+            <SelectItem value="contacted">Contacted</SelectItem>
+            <SelectItem value="interested">Interested</SelectItem>
+            <SelectItem value="admitted">Admitted</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priority</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Inquiries List */}
+      {isLoading ? (
+        <Card className="p-8 text-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">Loading inquiries...</p>
+          </div>
+        </Card>
+      ) : filteredInquiries.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="flex flex-col items-center space-y-4">
+            <MessageSquare className="w-12 h-12 text-muted-foreground" />
+            <div>
+              <h3 className="text-lg font-semibold">No Inquiries Found</h3>
+              <p className="text-muted-foreground">
+                {searchTerm || selectedStatus !== 'all' || selectedPriority !== 'all'
+                  ? 'Try adjusting your filters to see more results.'
+                  : 'Student inquiries will appear here when they contact you about your courses.'
+                }
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredInquiries.map((inquiry) => (
+            <Card key={inquiry.id} className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setSelectedInquiry(inquiry);
+                    setShowInquiryDetails(true);
+                  }}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback>
+                        {inquiry.studentName?.charAt(0) || 'S'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-semibold text-lg">{inquiry.studentName}</h4>
+                      <p className="text-muted-foreground">{inquiry.studentEmail}</p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <Badge variant="outline" className="text-blue-600">
+                          {inquiry.courseName}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(inquiry.inquiryDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {inquiry.message && (
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                          {inquiry.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant={inquiry.status === 'new' ? 'default' : 'secondary'}
+                      className="capitalize"
+                    >
+                      {inquiry.status}
+                    </Badge>
+                    <Badge 
+                      variant="outline"
+                      className={inquiry.priority === 'high' ? 'text-red-600 border-red-600' : 
+                                inquiry.priority === 'medium' ? 'text-yellow-600 border-yellow-600' : 
+                                'text-green-600 border-green-600'}
+                    >
+                      {inquiry.priority}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1617,204 +1805,196 @@ function StudentsDashboard({
   lastRefreshTime: Date;
   onRefresh: () => void;
 }) {
-  const [selectedGrade, setSelectedGrade] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [studentsData, setStudentsData] = useState({
-    students: [],
-    stats: {
-      total: 0,
-      active: 0,
-      graduated: 0,
-      newEnrollments: 0,
-      thisMonth: 0
-    }
-  });
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [showStudentDetails, setShowStudentDetails] = useState(false);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Real data fetching from database
+  // Fetch student enrollments on component mount
   useEffect(() => {
-    loadStudentsData();
-  }, [selectedGrade, selectedStatus]);
+    fetchStudentEnrollments();
+  }, []);
 
-  const loadStudentsData = async () => {
-    setIsLoading(true);
+  const fetchStudentEnrollments = async () => {
     try {
+      setLoading(true);
+      setError(null);
+
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        console.error('User not authenticated');
-        setIsLoading(false);
+        throw new Error('User not authenticated');
+      }
+
+      console.log('Fetching student enrollments for institution:', user.id);
+
+      // First, get the institution's courses
+      const { data: institutionCourses, error: coursesError } = await supabase
+        .from('institution_courses')
+        .select('id, title, description, category, institution_id')
+        .eq('institution_id', user.id);
+
+      if (coursesError) {
+        console.error('Error fetching institution courses:', coursesError);
+        throw new Error('Failed to fetch institution courses');
+      }
+
+      console.log('Institution courses fetched:', institutionCourses);
+      console.log('Number of courses found:', institutionCourses?.length || 0);
+
+      if (!institutionCourses || institutionCourses.length === 0) {
+        console.log('No courses found for this institution');
+        setEnrollments([]);
         return;
       }
 
-      // Fetch students data from database
-      const [students, stats] = await Promise.all([
-        fetchStudents(user.id),
-        fetchStudentsStats(user.id)
-      ]);
+      const courseIds = institutionCourses.map(course => course.id);
+      console.log('Institution course IDs:', courseIds);
 
-      setStudentsData({
-        students,
-        stats
-      });
-
-    } catch (error) {
-      console.error('Error loading students data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch students data
-  const fetchStudents = async (userId: string) => {
-    try {
-      // Get students from course enrollments
-      const { data: enrollments, error: enrollmentsError } = await supabase
+      // Then fetch enrollments for these courses
+      const { data: enrollmentData, error: enrollmentError } = await supabase
         .from('course_enrollments')
         .select(`
           id,
-          created_at,
-          courses!inner(
-            id,
-            title,
-            tutor_id
-          )
+          student_id,
+          course_id,
+          status,
+          enrolled_at,
+          created_at
         `)
-        .eq('courses.tutor_id', userId);
+        .in('course_id', courseIds)
+        .eq('status', 'enrolled')
+        .order('enrolled_at', { ascending: false });
 
-      if (enrollmentsError) {
-        console.error('Error fetching enrollments:', enrollmentsError);
-        return [];
+      if (enrollmentError) {
+        console.error('Error fetching enrollments:', enrollmentError);
+        throw new Error('Failed to fetch student enrollments');
       }
 
-      // Get unique students from enrollments
-      const studentIds = [...new Set(enrollments?.map(e => e.id) || [])];
-      
-      // Mock student data based on enrollments (in real implementation, this would be actual student data)
-      const mockStudents = (enrollments || []).map((enrollment, index) => ({
-        id: `student_${enrollment.id}_${index}`,
-        name: `Student ${index + 1}`,
-        email: `student${index + 1}@example.com`,
-        phone: `+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        grade: ['9th', '10th', '11th', '12th', 'College'][Math.floor(Math.random() * 5)],
-        status: ['active', 'graduated', 'inactive'][Math.floor(Math.random() * 3)],
-        enrollmentDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-        courses: [enrollment.courses.title],
-        gpa: (Math.random() * 2 + 2).toFixed(1), // 2.0 to 4.0
-        attendance: Math.floor(Math.random() * 20) + 80, // 80-100%
-        parentName: `Parent ${index + 1}`,
-        parentPhone: `+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        address: `${Math.floor(Math.random() * 9999) + 1} Main St, City, State`,
-        emergencyContact: `Emergency Contact ${index + 1}`,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${enrollment.id}`,
-        lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-      }));
+      console.log('Student enrollments fetched:', enrollmentData);
+      console.log('Total enrollments found:', enrollmentData?.length || 0);
 
-      // Filter by grade and status
-      let filteredStudents = mockStudents;
-      if (selectedGrade !== 'all') {
-        filteredStudents = filteredStudents.filter(student => student.grade === selectedGrade);
-      }
-      if (selectedStatus !== 'all') {
-        filteredStudents = filteredStudents.filter(student => student.status === selectedStatus);
+      // Check for self-enrollments (institution enrolling in their own course)
+      const selfEnrollments = (enrollmentData || []).filter(e => e.student_id === user.id);
+      const realStudentEnrollments = (enrollmentData || []).filter(e => e.student_id !== user.id);
+      
+      console.log('🔍 ENROLLMENT ANALYSIS:');
+      console.log('Current user ID (institution):', user.id);
+      console.log('All enrollment student IDs:', enrollmentData?.map(e => e.student_id) || []);
+      console.log('Self-enrollments (institution enrolling in own course):', selfEnrollments.length);
+      console.log('Real student enrollments:', realStudentEnrollments.length);
+      
+      if (selfEnrollments.length > 0) {
+        console.warn('⚠️ DATA INTEGRITY ISSUE: Institution is enrolled in their own course!');
+        console.warn('Self-enrollment details:', selfEnrollments);
       }
 
-      return filteredStudents;
-    } catch (error) {
-      console.error('Error in fetchStudents:', error);
-      return [];
-    }
-  };
-
-  // Fetch students statistics
-  const fetchStudentsStats = async (userId: string) => {
-    try {
-      const students = await fetchStudents(userId);
+      // Use only real student enrollments (filter out self-enrollments)
+      let validEnrollments = realStudentEnrollments;
+      console.log('Using valid enrollments (excluding self-enrollments):', validEnrollments.length);
       
-      const stats = {
-        total: students.length,
-        active: students.filter(s => s.status === 'active').length,
-        graduated: students.filter(s => s.status === 'graduated').length,
-        newEnrollments: students.filter(s => {
-          const enrollDate = new Date(s.enrollmentDate);
-          const now = new Date();
-          const diffTime = Math.abs(now - enrollDate);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return diffDays <= 30; // New enrollments in last 30 days
-        }).length,
-        thisMonth: students.filter(s => {
-          const enrollDate = new Date(s.enrollmentDate);
-          const now = new Date();
-          return enrollDate.getMonth() === now.getMonth() && enrollDate.getFullYear() === now.getFullYear();
-        }).length
-      };
+      // If no valid enrollments, show all enrollments for debugging
+      if (validEnrollments.length === 0 && enrollmentData && enrollmentData.length > 0) {
+        console.warn('⚠️ No valid enrollments after filtering! All enrollments appear to be self-enrollments.');
+        console.warn('This indicates a data integrity issue - institution enrolled in their own course.');
+        console.warn('Recommendation: Delete self-enrollments from database.');
+        // Don't show self-enrollments in UI - keep validEnrollments empty
+      }
 
-      return stats;
-    } catch (error) {
-      console.error('Error in fetchStudentsStats:', error);
-      return {
-        total: 0,
-        active: 0,
-        graduated: 0,
-        newEnrollments: 0,
-        thisMonth: 0
-      };
+      // Fetch student profiles for the enrolled students
+      const studentIds = [...new Set(validEnrollments?.map(e => e.student_id) || [])];
+      console.log('Student IDs to fetch profiles for:', studentIds);
+      console.log('Raw enrollment data:', validEnrollments);
+
+      let studentProfiles = [];
+      if (studentIds.length > 0) {
+        console.log('🔍 PROFILE FETCHING DEBUG:');
+        console.log('Searching for profiles with IDs:', studentIds);
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role, created_at')
+          .in('id', studentIds);
+
+        if (profilesError) {
+          console.error('Error fetching student profiles:', profilesError);
+          console.error('Profile error details:', {
+            code: profilesError.code,
+            message: profilesError.message,
+            details: profilesError.details,
+            hint: profilesError.hint
+          });
+        } else {
+          studentProfiles = profilesData || [];
+          console.log('Student profiles fetched:', studentProfiles);
+          console.log('Number of profiles found:', studentProfiles.length);
+          
+          // Check if we found profiles for all students
+          const foundProfileIds = studentProfiles.map(p => p.id);
+          const missingProfileIds = studentIds.filter(id => !foundProfileIds.includes(id));
+          if (missingProfileIds.length > 0) {
+            console.warn('⚠️ Missing profiles for student IDs:', missingProfileIds);
+            
+            // Try to fetch from users table as fallback
+            console.log('🔍 Trying to fetch from users table as fallback...');
+            const { data: usersData, error: usersError } = await supabase
+              .from('users')
+              .select('id, email, created_at')
+              .in('id', missingProfileIds);
+              
+            if (usersError) {
+              console.error('Error fetching from users table:', usersError);
+            } else {
+              console.log('Users data fetched:', usersData);
+              // Add users data to studentProfiles with fallback names
+              const fallbackProfiles = (usersData || []).map(user => ({
+                id: user.id,
+                full_name: `Student ${user.id.slice(0, 8)}...`,
+                email: user.email || 'No email available',
+                role: 'student',
+                created_at: user.created_at
+              }));
+              studentProfiles = [...studentProfiles, ...fallbackProfiles];
+              console.log('Combined profiles (profiles + users fallback):', studentProfiles);
+            }
+          }
+        }
+      }
+
+      // Combine enrollment data with student profiles and course details
+      const enrichedEnrollments = (validEnrollments || []).map(enrollment => {
+        const studentProfile = studentProfiles.find(profile => profile.id === enrollment.student_id);
+        const courseDetails = institutionCourses.find(course => course.id === enrollment.course_id);
+        
+        console.log(`Processing enrollment for student_id: ${enrollment.student_id}`);
+        console.log(`Found profile:`, studentProfile);
+        
+        return {
+          ...enrollment,
+          student_name: studentProfile?.full_name || `Student ${enrollment.student_id.slice(0, 8)}...`,
+          student_email: studentProfile?.email || `student_${enrollment.student_id.slice(0, 8)}@example.com`,
+          course_title: courseDetails?.title || 'Unknown Course',
+          course_description: courseDetails?.description || '',
+          course_category: courseDetails?.category || '',
+          has_profile: !!studentProfile,
+          student_role: studentProfile?.role || 'unknown'
+        };
+      });
+
+      setEnrollments(enrichedEnrollments);
+      console.log('Enriched enrollments:', enrichedEnrollments);
+
+    } catch (err) {
+      console.error('Error in fetchStudentEnrollments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch student enrollments');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleStatusChange = async (studentId: string, newStatus: string) => {
-    try {
-      // In real implementation, this would update the database
-      console.log(`Updating student ${studentId} to status: ${newStatus}`);
-      
-      // Update local state
-      setStudentsData(prev => ({
-        ...prev,
-        students: prev.students.map(student => 
-          student.id === studentId ? { ...student, status: newStatus } : student
-        )
-      }));
-
-      // Refresh stats
-      const stats = await fetchStudentsStats('current_user');
-      setStudentsData(prev => ({
-        ...prev,
-        stats
-      }));
-
-    } catch (error) {
-      console.error('Error updating student status:', error);
-    }
+  const handleRefresh = () => {
+    fetchStudentEnrollments();
+    onRefresh();
   };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'graduated': return 'bg-blue-100 text-blue-800';
-      case 'inactive': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case '9th': return 'bg-purple-100 text-purple-800';
-      case '10th': return 'bg-blue-100 text-blue-800';
-      case '11th': return 'bg-green-100 text-green-800';
-      case '12th': return 'bg-orange-100 text-orange-800';
-      case 'College': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const filteredStudents = studentsData.students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.courses.some(course => course.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
 
   return (
     <div className="space-y-6">
@@ -1822,7 +2002,7 @@ function StudentsDashboard({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h2 className="text-2xl font-bold text-gray-900">Student Management</h2>
+            <h2 className="text-2xl font-bold text-gray-900">My Students</h2>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
               <span className="text-xs text-muted-foreground">
@@ -1830,63 +2010,55 @@ function StudentsDashboard({
               </span>
             </div>
           </div>
-          <p className="text-gray-600">Manage enrolled students, track progress, and monitor performance</p>
+          <p className="text-gray-600">Student enrollments and course details</p>
           <p className="text-xs text-gray-500 mt-1">Last updated: {lastRefreshTime.toLocaleTimeString()}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => {
-              loadStudentsData();
-              onRefresh();
-            }}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={loading}
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Refresh'}
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-      <Card>
-        <CardContent className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Total Students</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
+                <p className="text-sm font-medium text-gray-600">Total Enrollments</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : studentsData.stats.total}
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : enrollments.length}
                 </p>
-                <p className="text-sm text-gray-500">All enrolled students</p>
+                <p className="text-sm text-gray-500">Active student enrollments</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
             </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
+                <p className="text-sm font-medium text-gray-600">Unique Students</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : studentsData.stats.active}
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : 
+                    new Set(enrollments.map(e => e.student_id)).size}
                 </p>
-                <p className="text-sm text-gray-500">Currently enrolled</p>
+                <p className="text-sm text-gray-500">Distinct enrolled students</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+                <UserCheck className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -1896,192 +2068,146 @@ function StudentsDashboard({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Graduated</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
+                <p className="text-sm font-medium text-gray-600">Courses Offered</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : studentsData.stats.graduated}
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : 
+                    new Set(enrollments.map(e => e.course_id)).size}
                 </p>
-                <p className="text-sm text-gray-500">Successfully graduated</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">New Enrollments</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : studentsData.stats.newEnrollments}
-                </p>
-                <p className="text-sm text-gray-500">Last 30 days</p>
+                <p className="text-sm text-gray-500">Courses with enrollments</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <UserPlus className="h-6 w-6 text-purple-600" />
+                <BookOpen className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        <Card>
+      {/* Error State */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : studentsData.stats.thisMonth}
-                </p>
-                <p className="text-sm text-gray-500">New enrollments</p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 text-red-600" />
               </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-orange-600" />
+              <div>
+                <h3 className="font-semibold text-red-800">Error Loading Data</h3>
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or course..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Grades</SelectItem>
-            <SelectItem value="9th">9th Grade</SelectItem>
-            <SelectItem value="10th">10th Grade</SelectItem>
-            <SelectItem value="11th">11th Grade</SelectItem>
-            <SelectItem value="12th">12th Grade</SelectItem>
-            <SelectItem value="College">College</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="graduated">Graduated</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Data Integrity Warning */}
+      {enrollments.length === 0 && !loading && !error && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-orange-800">No Valid Student Enrollments</h3>
+                <p className="text-sm text-orange-600 mt-1">
+                  All current enrollments appear to be self-enrollments (institution enrolled in own courses).
+                </p>
+                <p className="text-xs text-orange-500 mt-2">
+                  This is a data integrity issue. Please clean up the database by removing self-enrollments.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Students Grid */}
+      {/* Enrollments List */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Students
+                <GraduationCap className="h-5 w-5" />
+                Student Enrollments
                 <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
               </CardTitle>
-              <p className="text-sm text-gray-600">Student directory and management</p>
+              <p className="text-sm text-gray-600">Detailed view of all student enrollments</p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <p className="text-gray-500">Loading students...</p>
+              <p className="text-gray-500">Loading student enrollments...</p>
             </div>
-          ) : filteredStudents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredStudents.map((student) => (
-                <Card key={student.id} className="hover:shadow-md transition-shadow">
+          ) : enrollments.length > 0 ? (
+            <div className="space-y-4">
+              {enrollments.map((enrollment) => (
+                <Card key={enrollment.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={student.avatar} alt={student.name} />
-                        <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 truncate">{student.name}</h3>
-                          <Badge className={getStatusColor(student.status)}>
-                            {student.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-1">{student.email}</p>
-                        <p className="text-sm text-gray-500 mb-2">{student.phone}</p>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={getGradeColor(student.grade)}>
-                            {student.grade}
-                          </Badge>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                            <span className="text-xs text-gray-600">GPA: {student.gpa}</span>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback>
+                            {enrollment.student_name?.charAt(0) || 'S'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">{enrollment.student_name}</h3>
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              {enrollment.status.toUpperCase()}
+                            </Badge>
+                            {!enrollment.has_profile && (
+                              <Badge variant="secondary" className="text-orange-600">
+                                No Profile
+                              </Badge>
+                            )}
                           </div>
-                        </div>
-                        <div className="space-y-1 text-xs text-gray-500">
-                          <p>📚 {student.courses.join(', ')}</p>
-                          <p>📊 Attendance: {student.attendance}%</p>
-                          <p>📅 Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}</p>
-                          <p>👨‍👩‍👧‍👦 Parent: {student.parentName}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedStudent(student);
-                              setShowStudentDetails(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          {student.status === 'active' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatusChange(student.id, 'graduated')}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <GraduationCap className="h-4 w-4 mr-1" />
-                              Graduate
-                            </Button>
+                          <p className="text-sm text-gray-600 mb-1">{enrollment.student_email}</p>
+                          {!enrollment.has_profile && (
+                            <p className="text-xs text-orange-600 mb-1">
+                              Student ID: {enrollment.student_id}
+                            </p>
                           )}
-                          {student.status === 'graduated' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatusChange(student.id, 'active')}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Reactivate
-                            </Button>
+                          <div className="flex items-center gap-4 mb-3">
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4 text-blue-500" />
+                              <span className="text-sm font-medium text-gray-700">{enrollment.course_title}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-gray-500">
+                                Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                          {enrollment.course_description && (
+                            <p className="text-sm text-gray-600 line-clamp-2">{enrollment.course_description}</p>
+                          )}
+                          {enrollment.course_category && (
+                            <Badge variant="secondary" className="mt-2">
+                              {enrollment.course_category}
+                            </Badge>
                           )}
                         </div>
                       </div>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                console.log('Viewing details for enrollment:', enrollment);
+                                // You can add more functionality here like opening a modal
+                                alert(`Student: ${enrollment.student_name}\nEmail: ${enrollment.student_email}\nCourse: ${enrollment.course_title}\nEnrolled: ${new Date(enrollment.enrolled_at).toLocaleDateString()}\nStatus: ${enrollment.status}`);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                          </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -2090,122 +2216,15 @@ function StudentsDashboard({
           ) : (
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No students found</p>
+              <p className="text-gray-500">No student enrollments found</p>
               <p className="text-sm text-gray-400 mt-1">
-                {searchTerm 
-                  ? 'No students match your search criteria'
-                  : 'Students will appear here when they enroll in your courses'
-                }
+                Students will appear here when they enroll in your courses
               </p>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-              <p className="text-sm text-gray-600">Common student management tasks</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Students
-              </Button>
-              <Button variant="outline" size="sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Student Reports
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Student Detail Dialog */}
-      {selectedStudent && (
-        <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Student Details</DialogTitle>
-              <DialogDescription>
-                Detailed information about {selectedStudent.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={selectedStudent.avatar} alt={selectedStudent.name} />
-                  <AvatarFallback>{selectedStudent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-xl font-semibold">{selectedStudent.name}</h3>
-                  <p className="text-gray-600">{selectedStudent.email}</p>
-                  <p className="text-gray-500">{selectedStudent.phone}</p>
-                  <Badge className={getStatusColor(selectedStudent.status)}>
-                    {selectedStudent.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Grade</Label>
-                  <Badge className={getGradeColor(selectedStudent.grade)}>
-                    {selectedStudent.grade}
-                  </Badge>
-                </div>
-                <div>
-                  <Label>GPA</Label>
-                  <p className="text-sm text-gray-600">{selectedStudent.gpa}</p>
-                </div>
-                <div>
-                  <Label>Attendance</Label>
-                  <p className="text-sm text-gray-600">{selectedStudent.attendance}%</p>
-                </div>
-                <div>
-                  <Label>Enrollment Date</Label>
-                  <p className="text-sm text-gray-600">{new Date(selectedStudent.enrollmentDate).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <Label>Parent Name</Label>
-                  <p className="text-sm text-gray-600">{selectedStudent.parentName}</p>
-                </div>
-                <div>
-                  <Label>Parent Phone</Label>
-                  <p className="text-sm text-gray-600">{selectedStudent.parentPhone}</p>
-                </div>
-              </div>
-              <div>
-                <Label>Address</Label>
-                <p className="text-sm text-gray-600">{selectedStudent.address}</p>
-              </div>
-              <div>
-                <Label>Emergency Contact</Label>
-                <p className="text-sm text-gray-600">{selectedStudent.emergencyContact}</p>
-              </div>
-              <div>
-                <Label>Courses</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedStudent.courses.map((course, index) => (
-                    <Badge key={index} variant="outline">{course}</Badge>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Last Activity</Label>
-                <p className="text-sm text-gray-600">{new Date(selectedStudent.lastActivity).toLocaleString()}</p>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-      </div>
+    </div>
   );
 }
 
@@ -2220,7 +2239,6 @@ function CoursesDashboard() {
   // State for data
   const [courses, setCourses] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
-  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -2320,16 +2338,14 @@ function CoursesDashboard() {
         throw new Error('User not authenticated');
       }
       
-      // Fetch courses, batches, and enrolled students
-      const [coursesData, batchesData, studentsData] = await Promise.all([
+      // Fetch courses and batches
+      const [coursesData, batchesData] = await Promise.all([
         loadCourses(userId),
-        loadBatches(userId),
-        loadEnrolledStudents(userId)
+        loadBatches(userId)
       ]);
       
       setCourses(coursesData);
       setBatches(batchesData);
-      setEnrolledStudents(studentsData);
     } catch (err) {
       setError('Failed to load data. Please try again.');
       console.error('Error fetching data:', err);
@@ -2351,16 +2367,14 @@ function CoursesDashboard() {
         return;
       }
       
-      // Fetch courses, batches, and enrolled students with fresh data
-      const [coursesData, batchesData, studentsData] = await Promise.all([
+      // Fetch courses and batches with fresh data
+      const [coursesData, batchesData] = await Promise.all([
         loadCourses(userId),
-        loadBatches(userId),
-        loadEnrolledStudents(userId)
+        loadBatches(userId)
       ]);
       
       setCourses(coursesData);
       setBatches(batchesData);
-      setEnrolledStudents(studentsData);
       
       console.log('✅ Enrollment data refreshed successfully');
     } catch (err) {
@@ -2374,6 +2388,21 @@ function CoursesDashboard() {
   const testEnrollmentUpdate = () => {
     console.log('🧪 Testing enrollment update...');
     refreshEnrollmentData();
+  };
+
+  // Test function to debug courses enrollment count specifically
+  const testCoursesEnrollmentCount = async () => {
+    console.log('🧪 Testing courses enrollment count...');
+    const userId = getCurrentUserId();
+    if (!userId) {
+      console.error('No user found for test');
+      return;
+    }
+    
+    console.log('Testing loadCourses function directly...');
+    const coursesData = await loadCourses(userId);
+    console.log('Direct loadCourses result:', coursesData);
+    setCourses(coursesData);
   };
 
   // Test function to debug student profile loading
@@ -2548,10 +2577,15 @@ function CoursesDashboard() {
 
             console.log(`Found ${(enrollments as any[])?.length || 0} enrollments for course: ${course.title}`);
             console.log('Enrollment details:', enrollments);
+            console.log('Course ID being queried:', course.id);
+            console.log('Enrollment query result:', { enrollments, enrollmentError });
+
+            const enrollmentCount = (enrollments as any[])?.length || 0;
+            console.log(`Setting enrollment_count to ${enrollmentCount} for course: ${course.title}`);
 
             return {
               ...course,
-              enrollment_count: (enrollments as any[])?.length || 0
+              enrollment_count: enrollmentCount
             };
           } catch (error) {
             console.error('Error in enrollment query for course:', course.id, error);
@@ -2571,6 +2605,8 @@ function CoursesDashboard() {
       
       console.log('All courses in database (for debugging):', allCourses);
       console.log('Current user ID:', userId);
+      console.log('Final courses with enrollments:', JSON.stringify(coursesWithEnrollments, null, 2));
+      console.log('Enrollment counts summary:', coursesWithEnrollments.map(c => ({ title: c.title, enrollment_count: c.enrollment_count })));
       
       return coursesWithEnrollments;
     } catch (err) {
@@ -2651,143 +2687,6 @@ function CoursesDashboard() {
     }
   };
 
-  const loadEnrolledStudents = async (userId: string) => {
-    try {
-      console.log('Loading enrolled students for institution:', userId);
-      
-      // Step 1: Get all courses for this institution
-      const { data: institutionCourses, error: coursesError } = await supabase
-        .from('institution_courses' as any)
-        .select('id, title, description, category, level, duration')
-        .eq('institution_id', userId)
-        .eq('status', 'Active');
-
-      if (coursesError) {
-        console.error('Error loading institution courses:', coursesError);
-        return [];
-      }
-
-      if (!institutionCourses || institutionCourses.length === 0) {
-        console.log('No institution courses found');
-        return [];
-      }
-
-      const courseIds = (institutionCourses as any[]).map(course => course.id);
-      console.log('Institution course IDs:', courseIds);
-
-      // Step 2: Get enrollments for these courses
-      const { data: enrollments, error: enrollmentsError } = await supabase
-        .from('course_enrollments' as any)
-        .select('*')
-        .in('course_id', courseIds)
-        .eq('status', 'enrolled')
-        .order('enrolled_at', { ascending: false });
-
-      if (enrollmentsError) {
-        console.error('Error loading enrollments:', enrollmentsError);
-        return [];
-      }
-
-      if (!enrollments || enrollments.length === 0) {
-        console.log('No enrollments found for institution courses');
-        return [];
-      }
-
-      console.log('Raw enrollments data:', enrollments);
-      console.log('Number of enrollments found:', enrollments?.length || 0);
-      
-      if (enrollments && enrollments.length > 0) {
-        console.log('Sample enrollment:', enrollments[0]);
-        console.log('Student IDs in enrollments:', enrollments.map((e: any) => e.student_id));
-        
-        // Check if any enrollments are self-enrollments (student_id = institution_id)
-        const selfEnrollments = enrollments.filter((e: any) => e.student_id === userId);
-        const realStudentEnrollments = enrollments.filter((e: any) => e.student_id !== userId);
-        
-        console.log('Self-enrollments (institution enrolling in own course):', selfEnrollments.length);
-        console.log('Real student enrollments:', realStudentEnrollments.length);
-        
-        // Check for data integrity issue: student_id = institution_id
-        if (selfEnrollments.length > 0) {
-          console.warn('⚠️ DATA INTEGRITY ISSUE DETECTED:');
-          console.warn('Student ID matches Institution ID - this suggests a data modeling problem');
-          console.warn('Student ID:', userId);
-          console.warn('This means the same user is both student and institution, which is incorrect');
-        }
-        
-        // Test if we can find any of these student IDs in profiles
-        const studentIds = enrollments.map((e: any) => e.student_id);
-        console.log('Testing profile access for student IDs:', studentIds);
-        
-        // Try to find at least one profile
-        const { data: testProfiles, error: testError } = await supabase
-          .from('profiles')
-          .select('id, full_name, role')
-          .in('id', studentIds.slice(0, 3)); // Test first 3 student IDs
-        
-        if (testError) {
-          console.error('Test profile query error:', testError);
-        } else {
-          console.log('Test profile query result:', testProfiles);
-        }
-      }
-
-      // Step 3: Fetch student profiles and combine with course data
-      const studentsWithCourses = await Promise.all(
-        (enrollments as any[]).map(async (enrollment: any) => {
-          try {
-            // Get student profile
-            const { data: studentProfiles, error: profileError } = await supabase
-              .from('profiles')
-              .select('id, full_name, role, created_at, updated_at')
-              .eq('id', enrollment.student_id);
-
-            if (profileError) {
-              console.error('Error loading student profile for student_id:', enrollment.student_id, profileError);
-              console.error('Profile error details:', {
-                code: profileError.code,
-                message: profileError.message,
-                details: profileError.details,
-                hint: profileError.hint
-              });
-              return null;
-            }
-
-            if (!studentProfiles || studentProfiles.length === 0) {
-              console.warn('No profile found for student_id:', enrollment.student_id);
-              return null;
-            }
-
-            const studentProfile = studentProfiles[0];
-
-            // Find the course details
-            const course = (institutionCourses as any[]).find((c: any) => c.id === enrollment.course_id);
-
-            return {
-              ...enrollment,
-              student_profile: studentProfile,
-              course: course,
-              student_name: (studentProfile as any)?.full_name || 'Unknown Student',
-              student_email: 'No email available', // Email not available in profiles table
-              course_title: (course as any)?.title || 'Unknown Course'
-            };
-          } catch (error) {
-            console.error('Error processing enrollment:', error);
-            return null;
-          }
-        })
-      );
-
-      // Filter out null results
-      const validStudents = studentsWithCourses.filter(student => student !== null);
-      console.log('Processed enrolled students:', validStudents);
-
-      return validStudents;
-    } catch (err) {
-      console.error('Error loading enrolled students:', err);
-      return [];
-    }
-  };
 
 
   const handleCreateCourse = async (courseData: any) => {
@@ -3076,6 +2975,16 @@ function CoursesDashboard() {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
+  // Debug logging for courses filtering
+  console.log('🔍 FILTERING COURSES:');
+  console.log('🔍 Original courses array:', JSON.stringify(courses, null, 2));
+  console.log('🔍 Courses enrollment counts:', courses.map(c => ({ title: c.title, enrollment_count: c.enrollment_count })));
+  console.log('🔍 Filtered courses array:', JSON.stringify(filteredCourses, null, 2));
+  console.log('🔍 Filtered enrollment counts:', filteredCourses.map(c => ({ title: c.title, enrollment_count: c.enrollment_count })));
+  console.log('🔍 Search query:', searchQuery);
+  console.log('🔍 Status filter:', statusFilter);
+  console.log('🔍 Category filter:', categoryFilter);
+
   // Filter batches
   const filteredBatches = batches.filter(batch => {
     const matchesSearch = batch.batch_name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
@@ -3278,6 +3187,16 @@ function CoursesDashboard() {
                 {isRefreshing ? 'Updating...' : 'Refresh'}
               </Button>
 
+              {/* Debug Test Button */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={testCoursesEnrollmentCount}
+                className="flex items-center gap-2"
+              >
+                🧪 Test Courses Count
+              </Button>
+
               {/* View Mode Toggle */}
               <div className="flex border rounded-lg">
                 <Button 
@@ -3313,10 +3232,6 @@ function CoursesDashboard() {
             <Users className="w-4 h-4" />
             <span>Batches ({filteredBatches.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="students" className="flex items-center space-x-2">
-            <UserCheck className="w-4 h-4" />
-            <span>Students ({enrolledStudents.length})</span>
-          </TabsTrigger>
         </TabsList>
 
         {/* Courses Tab */}
@@ -3325,6 +3240,11 @@ function CoursesDashboard() {
             <CoursesEmptyState />
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(() => {
+                console.log('🎨 RENDERING COURSES:', JSON.stringify(filteredCourses, null, 2));
+                console.log('🎨 Enrollment counts in render:', filteredCourses.map(c => ({ title: c.title, enrollment_count: c.enrollment_count })));
+                return null;
+              })()}
               {filteredCourses.map((course) => (
                 <Card key={course.id} className="hover:shadow-lg transition-shadow duration-200 border-0 bg-white">
                   <CardHeader className="pb-3">
@@ -3524,83 +3444,6 @@ function CoursesDashboard() {
           )}
         </TabsContent>
 
-        {/* Students Tab */}
-        <TabsContent value="students" className="space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold">Enrolled Students</h3>
-              <p className="text-sm text-muted-foreground">Manage students enrolled in your courses</p>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={refreshEnrollmentData}
-              disabled={loading || isRefreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Updating...' : 'Refresh'}
-            </Button>
-          </div>
-
-          {enrolledStudents.length === 0 ? (
-            <Card className="p-8 text-center">
-              <div className="flex flex-col items-center space-y-4">
-                <UserCheck className="w-12 h-12 text-muted-foreground" />
-                <div>
-                  <h3 className="text-lg font-semibold">No Students Enrolled</h3>
-                  <p className="text-muted-foreground">
-                    Students will appear here once they enroll in your courses.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {enrolledStudents.map((student) => (
-                <Card key={`${student.student_id}-${student.course_id}`} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src="" />
-                          <AvatarFallback>
-                            {student.student_name?.charAt(0) || 'S'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-semibold text-lg">{student.student_name}</h4>
-                          <p className="text-muted-foreground">{student.student_email}</p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <Badge variant="outline" className="text-blue-600">
-                              {student.course_title}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              Enrolled: {new Date(student.enrolled_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge 
-                          variant={student.status === 'enrolled' ? 'default' : 'secondary'}
-                          className="capitalize"
-                        >
-                          {student.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          Message
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
       </Tabs>
 
       {/* Add Course Modal */}

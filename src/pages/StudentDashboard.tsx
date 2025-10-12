@@ -312,21 +312,45 @@ function ContactInstitutions() {
     if (!selectedInstitution) return;
 
     try {
-      const { data, error } = await supabase
-        .from('institution_student_enquiries')
-        .insert({
+      // Direct API call to bypass Supabase client cache issues
+      const response = await fetch('https://kumlliwulkwljbrlremp.supabase.co/rest/v1/student_inquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1bWxsaXd1bGt3bGpicmxyZW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDQ3ODgsImV4cCI6MjA3NTYyMDc4OH0.HerwuPEbvk2gLKYQfvqvG1cRkjFe4IiBMk6QqLTw5gU',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1bWxsaXd1bGt3bGpicmxyZW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDQ3ODgsImV4cCI6MjA3NTYyMDc4OH0.HerwuPEbvk2gLKYQfvqvG1cRkjFe4IiBMk6QqLTw5gU'
+        },
+        body: JSON.stringify({
           institution_id: selectedInstitution.user_id,
           student_name: contactForm.student_name,
           student_email: contactForm.student_email,
           course_interest: contactForm.course_interest,
           message: contactForm.message,
           status: 'new'
-        });
+        })
+      });
 
-      if (error) {
-        console.error('Error submitting inquiry:', error);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error submitting inquiry:', errorText);
         alert('Failed to submit inquiry. Please try again.');
         return;
+      }
+
+      // Check if response has content before parsing JSON
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      let data = null;
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+          console.log('Inquiry submitted successfully:', data);
+        } catch (parseError) {
+          console.log('Response is not JSON, but request was successful');
+        }
+      } else {
+        console.log('Empty response, but request was successful');
       }
 
       alert('Your inquiry has been submitted successfully! The institution will contact you soon.');
