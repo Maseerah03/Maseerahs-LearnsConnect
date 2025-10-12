@@ -34,7 +34,6 @@ import {
   Users,
   Calendar,
   MessageCircle,
-  Wallet,
   User,
   HelpCircle,
   ChevronRight,
@@ -45,12 +44,10 @@ import {
   Star,
   MapPin,
   Clock,
-  DollarSign,
   Filter,
   LogOut,
   Plus,
   Settings,
-  BarChart3,
   Loader2,
   Globe,
   Check,
@@ -239,6 +236,7 @@ export default function TutorDashboard() {
       // Load counts for dashboard
       await loadEnrolledStudentsCount();
       await loadUpcomingSessionsCount();
+      await loadClassesCompletedCount();
     } catch (error) {
       console.error("Error loading user data:", error);
     }
@@ -277,6 +275,12 @@ export default function TutorDashboard() {
 
   const refreshCourses = async () => {
     await loadCourses();
+  };
+
+  const refreshDashboardCounts = async () => {
+    await loadEnrolledStudentsCount();
+    await loadUpcomingSessionsCount();
+    await loadClassesCompletedCount();
   };
 
   const loadEnrolledStudentsCount = async () => {
@@ -1217,6 +1221,34 @@ export default function TutorDashboard() {
     };
   }, [user, loadUnreadMessagesCount]);
 
+  // Set up real-time subscription for courses changes to update counts
+  useEffect(() => {
+    if (!user) return;
+
+    const coursesChannel = supabase
+      .channel('tutor-courses')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to ALL events: INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'courses',
+          filter: `tutor_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Courses table changed:', payload);
+          // Refresh both counts when courses change
+          loadUpcomingSessionsCount();
+          loadClassesCompletedCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(coursesChannel);
+    };
+  }, [user]);
+
   // Listen for unread count updates from child components
   useEffect(() => {
     const handleUnreadCountUpdate = (event: CustomEvent) => {
@@ -1278,7 +1310,6 @@ export default function TutorDashboard() {
     { label: "Students", icon: <Users />, id: "students" },
     { label: "Schedule", icon: <Calendar />, id: "schedule" },
     { label: "Messages", icon: <MessageCircle />, id: "messages", badge: unreadCount > 0 ? unreadCount : undefined },
-    { label: "Earnings", icon: <Wallet />, id: "earnings" },
     
     { label: "Help", icon: <HelpCircle />, id: "help" },
   ];
@@ -1358,9 +1389,7 @@ export default function TutorDashboard() {
             {state.activeTab === "courses" && (
               <CourseManagement onRefresh={() => {
                 refreshCourses();
-                // Also refresh students count and trigger students refresh
-                loadEnrolledStudentsCount();
-                loadUpcomingSessionsCount();
+                refreshDashboardCounts();
                 setTimeout(() => {
                   const event = new CustomEvent('refresh-students');
                   window.dispatchEvent(event);
@@ -1379,12 +1408,12 @@ export default function TutorDashboard() {
             )}
 
             {state.activeTab === "schedule" && (
-              <ScheduleDashboard tutorProfile={tutorProfile} toast={toast} onRefresh={refreshCourses} />
+              <ScheduleDashboard tutorProfile={tutorProfile} toast={toast} onRefresh={() => {
+                refreshCourses();
+                refreshDashboardCounts();
+              }} />
             )}
 
-            {state.activeTab === "earnings" && (
-              <EarningsDashboard />
-            )}
 
             {state.activeTab === "help" && (
               <HelpSupport />
@@ -1509,21 +1538,14 @@ function DashboardHome({
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [enrolledStudentsCount, setEnrolledStudentsCount] = useState(0);
   const [upcomingSessionsCount, setUpcomingSessionsCount] = useState(0);
-  const [earnings, setEarnings] = useState({
-    thisMonth: 0,
-    lastMonth: 0,
-    totalStudents: students.length,
-    totalClasses: 0,
-    successRate: '0%',
-    averageRating: tutorProfile?.rating || 0,
-  });
+  const [classesCompletedCount, setClassesCompletedCount] = useState(0);
 
   useEffect(() => {
     // Load recent activity from database
     loadRecentActivity();
-    loadEarnings();
     loadEnrolledStudentsCount();
     loadUpcomingSessionsCount();
+    loadClassesCompletedCount();
     // Calculate response time based on actual message data
     calculateResponseTime();
   }, []);
@@ -1582,16 +1604,16 @@ function DashboardHome({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Count upcoming classes for this tutor
-      const { data: classes, error } = await supabase
-        .from('classes' as any)
+      // Count courses marked as scheduled for this tutor
+      const { data: courses, error } = await supabase
+        .from('courses' as any)
         .select('id', { count: 'exact' })
         .eq('tutor_id', user.id)
-        .gte('start_time', new Date().toISOString())
-        .in('status', ['scheduled', 'in_progress']);
+        .eq('status', 'scheduled')
+        .eq('is_active', true);
 
-      if (!error && classes !== null) {
-        setUpcomingSessionsCount(classes.length);
+      if (!error && courses !== null) {
+        setUpcomingSessionsCount(courses.length);
       } else {
         setUpcomingSessionsCount(0);
       }
@@ -1601,34 +1623,30 @@ function DashboardHome({
     }
   };
 
-  const loadEarnings = async () => {
+  const loadClassesCompletedCount = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // TODO: Implement when earnings/classes tables are available
-      // For now, we'll use the data we have available
-      setEarnings({
-        thisMonth: 0, // TODO: Fetch from earnings table
-        lastMonth: 0, // TODO: Fetch from earnings table
-        totalStudents: enrolledStudentsCount,
-        totalClasses: 0, // TODO: Fetch from classes table
-        successRate: '0%', // TODO: Calculate from completed vs total classes
-        averageRating: tutorProfile?.rating || 0,
-      });
+      // Count courses marked as completed for this tutor
+      const { data: courses, error } = await supabase
+        .from('courses' as any)
+        .select('id', { count: 'exact' })
+        .eq('tutor_id', user.id)
+        .eq('status', 'completed')
+        .eq('is_active', true);
+
+      if (!error && courses !== null) {
+        setClassesCompletedCount(courses.length);
+      } else {
+        setClassesCompletedCount(0);
+      }
     } catch (error) {
-      console.error("Error loading earnings:", error);
-      // Set fallback values on error
-      setEarnings({
-        thisMonth: 0,
-        lastMonth: 0,
-        totalStudents: enrolledStudentsCount,
-        totalClasses: 0,
-        successRate: '0%',
-        averageRating: tutorProfile?.rating || 0,
-      });
+      console.error('Error loading classes completed count:', error);
+      setClassesCompletedCount(0);
     }
   };
+
 
   // Function to calculate and update response time based on actual message data
   const calculateResponseTime = async () => {
@@ -1750,7 +1768,7 @@ function DashboardHome({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Star className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-semibold">{earnings.averageRating.toFixed(1)}</span>
+                <span className="text-sm font-semibold">{(tutorProfile?.rating || 0).toFixed(1)}</span>
                 <span className="text-sm text-muted-foreground">({tutorProfile?.total_reviews || 0} reviews)</span>
               </div>
               <Badge variant={tutorProfile?.verified ? "default" : "secondary"}>
@@ -1833,20 +1851,7 @@ function DashboardHome({
       </section>
 
       {/* Quick Stats */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <DollarSign className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold">₹{earnings.thisMonth.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
@@ -1855,7 +1860,7 @@ function DashboardHome({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold">{earnings.totalStudents}</p>
+                <p className="text-2xl font-bold">{enrolledStudentsCount}</p>
               </div>
             </div>
           </CardContent>
@@ -1880,21 +1885,8 @@ function DashboardHome({
                 <Calendar className="h-6 w-6 text-accent" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Upcoming Sessions</p>
+                <p className="text-sm text-muted-foreground">Scheduled Courses</p>
                 <p className="text-2xl font-bold">{upcomingSessionsCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-success/10 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Success Rate</p>
-                <p className="text-2xl font-bold">{earnings.successRate || '0%'}</p>
               </div>
             </div>
           </CardContent>
@@ -1928,14 +1920,14 @@ function DashboardHome({
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1">
-                  {earnings.totalStudents || 0}
+                  {enrolledStudentsCount || 0}
                 </h3>
                 <p className="text-sm text-gray-600">Students Taught</p>
               </div>
             </CardContent>
           </Card>
           
-          {/* Classes Completed */}
+          {/* Courses Completed */}
           <Card className="shadow-soft hover:shadow-medium transition-shadow">
             <CardContent className="p-4 text-center">
               <div className="flex flex-col items-center">
@@ -1943,27 +1935,13 @@ function DashboardHome({
                   <BookOpen className="h-6 w-6 text-purple-600" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1">
-                  {earnings.totalClasses || 0}
+                  {classesCompletedCount}
                 </h3>
-                <p className="text-sm text-gray-600">Classes Completed</p>
+                <p className="text-sm text-gray-600">Courses Completed</p>
               </div>
             </CardContent>
           </Card>
           
-          {/* Response Time */}
-          <Card className="shadow-soft hover:shadow-medium transition-shadow">
-            <CardContent className="p-4 text-center">
-              <div className="flex flex-col items-center">
-                <div className="bg-orange-100 rounded-full p-3 mb-3">
-                  <Clock className="h-6 w-6 text-orange-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">
-                  {tutorProfile?.response_time_hours || 0}
-                </h3>
-                <p className="text-sm text-gray-600">Response Time (hrs)</p>
-              </div>
-            </CardContent>
-          </Card>
           
           {/* Languages */}
           <Card className="shadow-soft hover:shadow-medium transition-shadow">
@@ -2096,483 +2074,16 @@ function DashboardHome({
         )}
       </section>
 
-      {/* Availability & Schedule */}
-      <section>
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-600" />
-          Availability & Schedule
-        </h3>
-        
-        {tutorProfile?.weekly_schedule && Object.values(tutorProfile.weekly_schedule).some(day => day.available) ? (
-          <div className="space-y-4">
-            {/* Timezone Info */}
-            {tutorProfile?.timezone && (
-              <div className="mb-4">
-                <Card className="shadow-soft">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Globe className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-gray-700">Your Timezone</span>
-                    </div>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                      {tutorProfile.timezone}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-            
-            {/* Weekly Schedule Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
-              {Object.entries(tutorProfile.weekly_schedule).map(([day, schedule]) => (
-                <Card key={day} className={`shadow-soft ${schedule.available ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
-                  <CardContent className="p-3">
-                    <div className="text-center">
-                      <h4 className="font-semibold text-sm capitalize mb-2 text-gray-700">
-                        {day}
-                      </h4>
-                      
-                      {schedule.available ? (
-                        <div className="space-y-2">
-                          {schedule.slots && schedule.slots.length > 0 ? (
-                            schedule.slots.map((slot, slotIndex) => (
-                              <div key={slotIndex} className="text-xs bg-white rounded px-2 py-1 border">
-                                <div className="font-medium text-blue-700">
-                                  {slot.start} - {slot.end}
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="text-xs text-gray-500 italic">
-                              Available
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-400">
-                          Not Available
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            {/* Edit Button */}
-            <div className="text-center">
-              <Button onClick={onViewProfile} variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Update Schedule
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500 mb-2">No availability set yet</p>
-            <p className="text-sm text-gray-400 mb-4">Set your weekly schedule to let students know when you're available</p>
-            <Button onClick={onViewProfile} variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Set Availability
-            </Button>
-          </div>
-        )}
-      </section>
-
-      {/* Reviews & Ratings */}
-      <section>
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Star className="h-5 w-5 text-yellow-600" />
-          Reviews & Ratings
-        </h3>
-        
-        {tutorProfile?.total_reviews && tutorProfile.total_reviews > 0 ? (
-          <div className="space-y-4">
-            {/* Overall Rating Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <Card className="shadow-soft">
-                <CardContent className="p-6 text-center">
-                  <div className="text-4xl font-bold text-gray-900 mb-2">
-                    {tutorProfile.rating || 0}
-                  </div>
-                  <div className="flex items-center justify-center mb-3">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star 
-                        key={star}
-                        className={`h-5 w-5 ${
-                          star <= (tutorProfile.rating || 0) 
-                            ? "text-yellow-500 fill-yellow-500" 
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {tutorProfile.total_reviews} total reviews
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="shadow-soft">
-                <CardContent className="p-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Rating Breakdown</h4>
-                  <div className="space-y-2">
-                    {[5, 4, 3, 2, 1].map((rating) => (
-                      <div key={rating} className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 w-12">
-                          <span className="text-sm font-medium text-gray-600">{rating}</span>
-                          <Star className="h-4 w-4 text-yellow-500" />
-                        </div>
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-yellow-500 h-2 rounded-full"
-                            style={{ 
-                              width: `${Math.round((Math.random() * 100))}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm text-gray-600 w-12 text-right">
-                          {Math.round(Math.random() * 100)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="shadow-soft">
-                <CardContent className="p-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Recent Performance</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">This Month</span>
-                      <span className="text-sm font-medium text-green-600">+12%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Last Month</span>
-                      <span className="text-sm font-medium text-blue-600">4.2★</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Response Rate</span>
-                      <span className="text-sm font-medium text-green-600">98%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Reviews Preview */}
-            <Card className="shadow-soft">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Recent Reviews</span>
-                  <Button variant="outline" size="sm">
-                    View All Reviews
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Sample Review - Replace with real data */}
-                  <div className="border-b border-gray-100 pb-4 last:border-b-0">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
-                          AS
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-gray-900">Anonymous Student</span>
-                          <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star 
-                                key={star}
-                                className={`h-3 w-3 ${
-                                  star <= 5 
-                                    ? "text-yellow-500 fill-yellow-500" 
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-xs text-gray-500">2 days ago</span>
-                        </div>
-                        <p className="text-sm text-gray-700 mb-2">
-                          Excellent tutor! Very patient and explains concepts clearly.
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-600">
-                          <span>Subject: Mathematics</span>
-                          <span>Class Type: Online</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-            <Star className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <h4 className="text-lg font-semibold mb-2">No Reviews Yet</h4>
-            <p className="text-gray-500 mb-4">You haven't received any reviews yet.</p>
-            <p className="text-sm text-gray-400">Start teaching to receive your first review!</p>
-          </div>
-        )}
-      </section>
 
 
 
 
 
-      {/* Contact Information Management */}
-      <section>
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-blue-600" />
-          Contact Information Management
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Contact Details Overview */}
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5 text-gray-600" />
-                Current Contact Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Response Time Status */}
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-900">Response Time</p>
-                    <p className="text-sm text-blue-700">
-                      {tutorProfile?.response_time_hours 
-                        ? `${tutorProfile.response_time_hours} hours`
-                        : "Not set - Set your response time"
-                      }
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                  Active
-                </Badge>
-              </div>
-
-              {/* Verification Status */}
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-900">Verification Status</p>
-                    <p className="text-sm text-green-700">Contact information verified</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Verified Contact
-                </Badge>
-              </div>
-
-              {/* Contact Preferences */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                  <MessageCircle className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">In-app messaging</span>
-                  <Badge variant="secondary" className="ml-auto">Enabled</Badge>
-                </div>
-                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                  <Calendar className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">Schedule consultation</span>
-                  <Badge variant="outline">Available</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Contact Settings */}
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Settings className="h-5 w-4 text-gray-600" />
-                Contact Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="responseTime" className="text-sm font-medium text-gray-700">
-                  Set Response Time (hours)
-                </Label>
-                <Input
-                  id="responseTime"
-                  type="number"
-                  placeholder="e.g., 2"
-                  min="1"
-                  max="48"
-                  className="mt-1"
-                  value={tutorProfile?.response_time_hours || ""}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0;
-                    setTutorProfile(prev => prev ? { ...prev, response_time_hours: value } : null);
-                  }}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  How quickly you typically respond to student inquiries
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="contactHours" className="text-sm font-medium text-gray-700">
-                  Preferred Contact Hours
-                </Label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="morning"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      defaultChecked
-                    />
-                    <Label htmlFor="morning" className="text-sm text-gray-700">Morning</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="afternoon"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      defaultChecked
-                    />
-                    <Label htmlFor="afternoon" className="text-sm text-gray-700">Afternoon</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="evening"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      defaultChecked
-                    />
-                    <Label htmlFor="evening" className="text-sm text-gray-700">Evening</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="weekend"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <Label htmlFor="weekend" className="text-sm text-gray-700">Weekend</Label>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="autoReply" className="text-sm font-medium text-gray-700">
-                  Auto-Reply Message
-                </Label>
-                <Textarea
-                  id="autoReply"
-                  placeholder="Set an automatic reply message for when you're unavailable..."
-                  className="mt-1 min-h-[80px] resize-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  This message will be sent automatically when you're offline
-                </p>
-              </div>
-
-              <Button variant="outline" className="w-full">
-                <Save className="h-4 w-4 mr-2" />
-                Save Contact Preferences
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contact Analytics */}
-        <div className="mt-6">
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-gray-600" />
-                Contact Analytics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">24</div>
-                  <div className="text-sm text-blue-700">Messages Today</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="text-2xl font-bold text-green-600">2.1h</div>
-                  <div className="text-sm text-green-700">Avg Response Time</div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <div className="text-2xl font-bold text-purple-600">98%</div>
-                  <div className="text-sm text-purple-700">Response Rate</div>
-                </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <div className="text-2xl font-bold text-orange-600">156</div>
-                  <div className="text-sm text-orange-700">Total Inquiries</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
 
 
 
-      {/* Quick Actions */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Button size="lg" className="bg-gradient-primary shadow-soft flex flex-col items-center justify-center gap-2 h-28" onClick={onViewStudents}>
-          <Users className="h-6 w-6" />
-          My Students
-        </Button>
-        <Button size="lg" className="bg-secondary text-secondary-foreground flex flex-col items-center justify-center gap-2 h-28" onClick={onViewSchedule}>
-          <Calendar className="h-6 w-6" />
-          Schedule
-        </Button>
-        <Button size="lg" className="bg-accent text-accent-foreground flex flex-col items-center justify-center gap-2 h-28" onClick={onViewMessages}>
-          <MessageCircle className="h-6 w-6" />
-          Messages
-        </Button>
-        <Button size="lg" className="bg-muted text-foreground flex flex-col items-center justify-center gap-2 h-28 relative">
-          <Wallet className="h-6 w-6" />
-          Earnings
-        </Button>
-      </section>
 
-      {/* Recent Activity */}
-      <section>
-        <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
-        {recentActivity.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentActivity.map((item, idx) => (
-              <Card key={idx} className="shadow-soft">
-                <CardContent className="p-4 flex items-center gap-3">
-                  {item.type === "class" && <BookOpen className="text-primary" />}
-                  {item.type === "message" && <MessageCircle className="text-secondary" />}
-                  {item.type === "payment" && <DollarSign className="text-accent" />}
-                  {item.type === "schedule" && <Calendar className="text-success" />}
-                  <div className="flex-1">
-                    <span className="text-muted-foreground">{item.text}</span>
-                    <p className="text-xs text-muted-foreground">{item.time}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">No recent activity. Your activity will appear here once you start teaching!</p>
-            </CardContent>
-          </Card>
-        )}
-      </section>
+
 
       {/* Interest Notifications */}
       {notifications.length > 0 && (
@@ -8007,24 +7518,6 @@ function ScheduleDashboard({ tutorProfile, toast, onRefresh }: { tutorProfile: T
   );
 }
 
-function EarningsDashboard() {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Earnings</h2>
-      <Card>
-        <CardContent className="p-6 text-center">
-          <div className="space-y-4">
-            <Wallet className="h-12 w-12 text-muted-foreground mx-auto" />
-            <div>
-              <h3 className="text-lg font-semibold mb-2">No Earnings Yet</h3>
-              <p className="text-muted-foreground">No earnings data available.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 function HelpSupport() {
   return (

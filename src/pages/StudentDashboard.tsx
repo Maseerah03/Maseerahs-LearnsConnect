@@ -2351,13 +2351,10 @@ function DashboardHome({
 }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [learningProgress, setLearningProgress] = useState<any[]>([]);
 
   useEffect(() => {
     // Load recent activity from database
     loadRecentActivity();
-    // Load learning progress from database
-    loadLearningProgress();
     // Load latest message notifications to surface on dashboard
     loadNotificationsPreview();
   }, []);
@@ -2449,130 +2446,6 @@ function DashboardHome({
     }
   };
 
-  const loadLearningProgress = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const progressData = [];
-
-      // 1. Fetch current subjects and progress from student's learning records
-      try {
-        // Check if learning_records table exists
-        const { data: learningRecords, error: learningError } = await supabase
-          .from('learning_records')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('updated_at', { ascending: false });
-
-        if (!learningError && learningRecords && learningRecords.length > 0) {
-          // Group by subject and calculate progress
-          const subjectProgress = learningRecords.reduce((acc, record) => {
-            if (!acc[record.subject]) {
-              acc[record.subject] = {
-                subject: record.subject,
-                totalClasses: 0,
-                completedClasses: 0,
-                progress: 0,
-                nextClass: null,
-                tutor: record.tutor_name || 'Tutor'
-              };
-            }
-            acc[record.subject].totalClasses++;
-            if (record.status === 'completed') {
-              acc[record.subject].completedClasses++;
-            }
-            acc[record.subject].progress = Math.round((acc[record.subject].completedClasses / acc[record.subject].totalClasses) * 100);
-            return acc;
-          }, {});
-
-          Object.values(subjectProgress).forEach(subject => {
-            progressData.push(subject);
-          });
-        }
-      } catch (learningTableError) {
-        console.log('Learning records table not available yet, using placeholder data');
-        // Add placeholder data for demonstration
-        progressData.push({
-          subject: 'Mathematics',
-          totalClasses: 0,
-          completedClasses: 0,
-          progress: 0,
-          nextClass: null,
-          tutor: 'No tutor assigned yet'
-        });
-      }
-
-      // 2. Fetch upcoming classes from classes table
-      try {
-        const { data: upcomingClasses, error: classesError } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('student_id', user.id)
-          .gte('start_time', new Date().toISOString())
-          .order('start_time', { ascending: true })
-          .limit(5);
-
-        // Get tutor profiles for classes
-        if (!classesError && upcomingClasses && upcomingClasses.length > 0) {
-          const classesWithTutors = await Promise.all(
-            upcomingClasses.map(async (classItem) => {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('full_name, profile_photo_url')
-                .eq('id', classItem.tutor_id)
-                .single();
-
-              return {
-                ...classItem,
-                profiles: profileData
-              };
-            })
-          );
-          upcomingClasses.splice(0, upcomingClasses.length, ...classesWithTutors);
-        }
-
-        if (!classesError && upcomingClasses && upcomingClasses.length > 0) {
-          // Add upcoming classes to progress data
-          upcomingClasses.forEach(classItem => {
-            const existingSubject = progressData.find(item => item.subject === classItem.subject);
-            if (existingSubject) {
-              existingSubject.nextClass = {
-                time: classItem.start_time,
-                tutor: classItem.profiles?.full_name || 'Tutor',
-                duration: classItem.duration || 60
-              };
-            } else {
-              // If subject doesn't exist in progress, create a new entry
-              progressData.push({
-                subject: classItem.subject,
-                totalClasses: 0,
-                completedClasses: 0,
-                progress: 0,
-                nextClass: {
-                  time: classItem.start_time,
-                  tutor: classItem.profiles?.full_name || 'Tutor',
-                  duration: classItem.duration || 60
-                },
-                tutor: classItem.profiles?.full_name || 'Tutor'
-              });
-            }
-          });
-        }
-      } catch (classesTableError) {
-        console.log('Classes table not available');
-      }
-
-      // 3. If no real data available, show empty state
-      // TODO: Remove this section when learning_records and classes tables are implemented
-      // The section will automatically show "No learning progress yet" when progressData is empty
-
-      setLearningProgress(progressData);
-    } catch (error) {
-      console.error("Error loading learning progress:", error);
-      setLearningProgress([]);
-    }
-  };
 
   const loadNotificationsPreview = async () => {
     try {
@@ -2631,14 +2504,7 @@ function DashboardHome({
         <Button 
           size="lg" 
           className="bg-secondary text-secondary-foreground flex flex-col items-center justify-center gap-2 h-28"
-          onClick={() => {
-            console.log('🔍 [Post Requirement] Button clicked!');
-            console.log('🔍 [Post Requirement] Current state:', state);
-            setState(prev => {
-              console.log('🔍 [Post Requirement] Setting showRequirementModal to true');
-              return { ...prev, showRequirementModal: true };
-            });
-          }}
+          onClick={() => setState(prev => ({ ...prev, activeTab: "requirements" }))}
         >
           <List className="h-6 w-6" />
           Post Requirement
@@ -2646,7 +2512,7 @@ function DashboardHome({
         <Button 
           size="lg" 
           className="bg-accent text-accent-foreground flex flex-col items-center justify-center gap-2 h-28 relative"
-          onClick={() => window.location.href = '#my-classes'}
+          onClick={() => setState(prev => ({ ...prev, activeTab: "my-classes" }))}
         >
           <GraduationCap className="h-6 w-6" />
           My Classes
@@ -2812,129 +2678,15 @@ function DashboardHome({
               <Button 
                 variant="link" 
                 className="text-primary flex items-center gap-1 p-0 h-auto"
-                onClick={() => window.location.href = '#courses'}
+                onClick={() => setState(prev => ({ ...prev, activeTab: "courses" }))}
               >
                 Browse All Courses <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* My Classes Quick Access */}
-            <div className="flex items-center justify-between mb-4 mt-6">
-              <div>
-                <h3 className="text-xl font-semibold">My Classes</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Track your enrolled courses and learning progress
-                </p>
-              </div>
-              <Button 
-                variant="link" 
-                className="text-primary flex items-center gap-1 p-0 h-auto"
-                onClick={() => window.location.href = '#my-classes'}
-              >
-                View My Classes <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
         
-        <div className="flex justify-center">
-          {/* Course Discovery Card */}
-          <Card className="shadow-soft hover:shadow-medium transition-shadow border-dashed border-2 border-gray-300 max-w-md">
-            <CardContent className="p-6">
-              <div className="text-center py-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <BookOpen className="h-8 w-8 text-blue-600" />
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Explore Courses</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  Find structured learning paths in your favorite subjects
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setState(prev => ({ ...prev, activeTab: 'courses' }))}
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Browse Courses
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </section>
 
-      {/* Learning Progress */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-xl font-semibold">Learning Progress</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Track your progress across subjects and upcoming classes
-            </p>
-          </div>
-          <Button variant="link" className="text-primary flex items-center gap-1 p-0 h-auto">
-            View All <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        {learningProgress.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {learningProgress.map((item, idx) => (
-              <Card key={idx} className="shadow-soft hover:shadow-medium transition-all duration-300">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold text-sm mb-1">{item.subject}</h4>
-                      <p className="text-xs text-muted-foreground">with {item.tutor}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-lg font-bold text-primary">{item.progress}%</span>
-                      <p className="text-xs text-muted-foreground">
-                        {item.completedClasses}/{item.totalClasses} classes
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Progress value={item.progress} className="h-2 mb-3" />
-                  
-                  {item.nextClass ? (
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-medium">Next Class</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {new Date(item.nextClass.time).toLocaleDateString()} at {new Date(item.nextClass.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.nextClass.duration} min with {item.nextClass.tutor}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-muted-foreground">No upcoming classes</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="flex flex-col items-center gap-3">
-                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                <div>
-                  <p className="text-muted-foreground font-medium">No learning progress yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Start learning with a tutor to see your progress here
-                  </p>
-                </div>
-                <Button size="sm" onClick={onFindTutors} className="mt-2">
-                  Find a Tutor
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </section>
     </div>
   );
 }
