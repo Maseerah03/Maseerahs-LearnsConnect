@@ -4750,228 +4750,270 @@ function ReportsDashboard({
   lastRefreshTime: Date;
   onRefresh: () => void;
 }) {
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  const [isLoading, setIsLoading] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState({
-    studentGrowth: [],
-    revenueData: [],
-    coursePerformance: [],
-    facultyMetrics: [],
-    enrollmentTrends: [],
-    topCourses: [],
-    recentActivity: []
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [studentsPerCourse, setStudentsPerCourse] = useState<Array<{course: string, students: number}>>([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState<Array<{month: string, revenue: number}>>([]);
 
-  // Real data fetching from database
+  // Fetch data on component mount
   useEffect(() => {
-    loadAnalyticsData();
-  }, [selectedPeriod]);
+    fetchReportsData();
+  }, []);
 
-  const loadAnalyticsData = async () => {
-    setIsLoading(true);
+  const fetchReportsData = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         console.error('User not authenticated');
-        setIsLoading(false);
+        setError('User not authenticated');
+        setLoading(false);
         return;
       }
 
-      // Fetch real data from database
-      const [
-        studentData,
-        courseData,
-        transactionData,
-        facultyData
-      ] = await Promise.all([
-        fetchStudentData(user.id),
-        fetchCourseData(user.id),
-        fetchTransactionData(user.id),
-        fetchFacultyData(user.id)
-      ]);
-
-      setAnalyticsData({
-        studentGrowth: studentData.growth,
-        revenueData: transactionData.revenue,
-        coursePerformance: courseData.performance,
-        facultyMetrics: facultyData.metrics,
-        enrollmentTrends: studentData.trends,
-        topCourses: courseData.topCourses,
-        recentActivity: []
-      });
-
-    } catch (error) {
-      console.error('Error loading analytics data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch student data
-  const fetchStudentData = async (userId: string) => {
-    try {
-      // Get student enrollments from course_enrollments table
-      const { data: enrollments, error } = await supabase
-        .from('course_enrollments')
-        .select(`
-          created_at,
-          courses!inner(tutor_id)
-        `)
-        .eq('courses.tutor_id', userId);
-
-      if (error) {
-        console.error('Error fetching student data:', error);
-        return { growth: [], trends: [] };
-      }
-
-      // Process data for growth trends
-      const growth = processStudentGrowth(enrollments || []);
-      const trends = processEnrollmentTrends(enrollments || []);
-
-      return { growth, trends };
-    } catch (error) {
-      console.error('Error in fetchStudentData:', error);
-      return { growth: [], trends: [] };
-    }
-  };
-
-  // Fetch course data
-  const fetchCourseData = async (userId: string) => {
-    try {
-      const { data: courses, error } = await supabase
-        .from('courses')
+      // Fetch students per course data from institution_courses
+      // Since course_enrollments references courses(id), we need to check if the course_id exists in institution_courses
+      const { data: institutionCourses, error: coursesError } = await supabase
+        .from('institution_courses')
         .select(`
           id,
           title,
-          created_at,
-          updated_at
+          institution_id
         `)
-        .eq('tutor_id', userId);
+        .eq('institution_id', user.id);
 
-      if (error) {
-        console.error('Error fetching course data:', error);
-        return { performance: [], topCourses: [] };
+      if (coursesError) {
+        console.error('Error fetching institution courses:', coursesError);
+        setError('Failed to fetch institution courses');
+        setLoading(false);
+        return;
       }
 
-      // Process course performance data
-      const performance = (courses || []).map(course => ({
-        name: course.title,
-        enrollments: 0, // Would need to join with enrollments
-        completion: 0, // Would need completion tracking
-        rating: 0 // Would need reviews table
+      // Get course IDs for this institution
+      const institutionCourseIds = (institutionCourses || []).map(course => course.id);
+      
+      if (institutionCourseIds.length === 0) {
+        setStudentsPerCourse([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch enrollments for institution courses
+      const { data: courseEnrollments, error: enrollmentsError } = await supabase
+        .from('course_enrollments')
+        .select(`
+          course_id,
+          student_id
+        `)
+        .in('course_id', institutionCourseIds);
+
+      if (enrollmentsError) {
+        console.error('Error fetching course enrollments:', enrollmentsError);
+        setError('Failed to fetch course enrollment data');
+        setLoading(false);
+        return;
+      }
+
+      // Process students per course data
+      const courseStudentCounts: {[key: string]: number} = {};
+      
+      // Create a map of course_id to course_title
+      const courseMap: {[key: string]: string} = {};
+      (institutionCourses || []).forEach((course: any) => {
+        courseMap[course.id] = course.title;
+      });
+
+      // Count students per course
+      (courseEnrollments || []).forEach((enrollment: any) => {
+        const courseTitle = courseMap[enrollment.course_id];
+        if (courseTitle) {
+          courseStudentCounts[courseTitle] = (courseStudentCounts[courseTitle] || 0) + 1;
+        }
+      });
+
+      const studentsPerCourseData = Object.entries(courseStudentCounts).map(([course, students]) => ({
+        course,
+        students: students as number
       }));
 
-      const topCourses = (courses || []).map(course => ({
-        name: course.title,
-        enrollments: 0,
-        revenue: 0
-      }));
+      setStudentsPerCourse(studentsPerCourseData);
 
-      return { performance, topCourses };
+      // Fetch monthly revenue data from student_fees
+      const { data: feesData, error: feesError } = await supabase
+        .from('student_fees')
+        .select(`
+          amount_paid,
+          paid_date,
+          institution_id
+        `)
+        .eq('institution_id', user.id)
+        .not('paid_date', 'is', null)
+        .not('amount_paid', 'is', null);
+
+      if (feesError) {
+        console.error('Error fetching fees data:', feesError);
+        setError('Failed to fetch revenue data');
+        setLoading(false);
+        return;
+      }
+
+      // Process monthly revenue data
+      const monthlyRevenueData: {[key: string]: number} = {};
+      (feesData || []).forEach((fee: any) => {
+        const month = new Date(fee.paid_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        monthlyRevenueData[month] = (monthlyRevenueData[month] || 0) + (fee.amount_paid || 0);
+      });
+
+      const monthlyRevenueArray = Object.entries(monthlyRevenueData)
+        .map(([month, revenue]) => ({
+          month,
+          revenue: revenue as number
+        }))
+        .sort((a, b) => {
+          // Sort by date
+          const dateA = new Date(a.month + ' 1');
+          const dateB = new Date(b.month + ' 1');
+          return dateA.getTime() - dateB.getTime();
+        });
+
+      setMonthlyRevenue(monthlyRevenueArray);
+
     } catch (error) {
-      console.error('Error in fetchCourseData:', error);
-      return { performance: [], topCourses: [] };
+      console.error('Error fetching reports data:', error);
+      setError('Failed to fetch reports data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Fetch transaction data
-  const fetchTransactionData = async (userId: string) => {
-    try {
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('amount, created_at, status')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
-
-      if (error) {
-        console.error('Error fetching transaction data:', error);
-        return { revenue: [] };
-      }
-
-      // Process revenue data by month
-      const revenue = processRevenueData(transactions || []);
-      return { revenue };
-    } catch (error) {
-      console.error('Error in fetchTransactionData:', error);
-      return { revenue: [] };
-    }
+  const handleRefresh = () => {
+    fetchReportsData();
+    onRefresh();
   };
 
-  // Fetch faculty data
-  const fetchFacultyData = async (userId: string) => {
-    try {
-      // For now, return empty array as faculty data structure needs to be defined
-      return { metrics: [] };
-    } catch (error) {
-      console.error('Error in fetchFacultyData:', error);
-      return { metrics: [] };
-    }
+  // Simple bar chart component for students per course
+  const BarChart = ({ data }: { data: Array<{course: string, students: number}> }) => {
+    const maxStudents = Math.max(...data.map(d => d.students), 1);
+    
+    return (
+      <div className="space-y-3">
+        {data.map((item, index) => (
+          <div key={index} className="flex items-center gap-3">
+            <div className="w-32 text-sm font-medium text-gray-700 truncate" title={item.course}>
+              {item.course}
+            </div>
+            <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+              <div 
+                className="bg-blue-600 h-6 rounded-full flex items-center justify-end pr-2"
+                style={{ width: `${(item.students / maxStudents) * 100}%` }}
+              >
+                <span className="text-xs text-white font-medium">{item.students}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
-  // Helper functions to process data
-  const processStudentGrowth = (enrollments: any[]) => {
-    // Group by month and count enrollments
-    const monthlyData = enrollments.reduce((acc, enrollment) => {
-      const month = new Date(enrollment.created_at).toLocaleDateString('en-US', { month: 'short' });
-      if (!acc[month]) {
-        acc[month] = 0;
-      }
-      acc[month]++;
-      return acc;
-    }, {});
-
-    return Object.entries(monthlyData).map(([month, count]) => ({
-      month,
-      students: count as number,
-      newEnrollments: count as number
-    }));
-  };
-
-  const processEnrollmentTrends = (enrollments: any[]) => {
-    // Group by day of week
-    const dailyData = enrollments.reduce((acc, enrollment) => {
-      const day = new Date(enrollment.created_at).toLocaleDateString('en-US', { weekday: 'short' });
-      if (!acc[day]) {
-        acc[day] = 0;
-      }
-      acc[day]++;
-      return acc;
-    }, {});
-
-    return Object.entries(dailyData).map(([day, count]) => ({
-      day,
-      enrollments: count as number
-    }));
-  };
-
-  const processRevenueData = (transactions: any[]) => {
-    // Group by month and sum amounts
-    const monthlyRevenue = transactions.reduce((acc, transaction) => {
-      const month = new Date(transaction.created_at).toLocaleDateString('en-US', { month: 'short' });
-      if (!acc[month]) {
-        acc[month] = 0;
-      }
-      acc[month] += transaction.amount || 0;
-      return acc;
-    }, {});
-
-    return Object.entries(monthlyRevenue).map(([month, revenue]) => ({
-      month,
-      revenue: revenue as number,
-      fees: revenue as number,
-      other: 0
-    }));
-  };
-
-  const getPeriodLabel = (period: string) => {
-    switch (period) {
-      case '7d': return 'Last 7 days';
-      case '30d': return 'Last 30 days';
-      case '90d': return 'Last 90 days';
-      case '1y': return 'Last year';
-      default: return 'Last 30 days';
-    }
+  // Simple line chart component for monthly revenue
+  const LineChart = ({ data }: { data: Array<{month: string, revenue: number}> }) => {
+    if (data.length === 0) return <div className="text-center text-gray-500 py-8">No revenue data available</div>;
+    
+    const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
+    const minRevenue = Math.min(...data.map(d => d.revenue), 0);
+    const range = maxRevenue - minRevenue;
+    
+    // Handle single data point case
+    const getXPosition = (index: number) => {
+      if (data.length === 1) return 210; // Center the single point
+      return 40 + (index / (data.length - 1)) * 340;
+    };
+    
+    return (
+      <div className="relative h-64">
+        <svg className="w-full h-full" viewBox="0 0 400 200">
+          {/* Grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
+            <line
+              key={i}
+              x1="40"
+              y1={40 + ratio * 120}
+              x2="380"
+              y2={40 + ratio * 120}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+            />
+          ))}
+          
+          {/* Line path - only draw if we have more than one point */}
+          {data.length > 1 && (
+            <path
+              d={data.map((item, index) => {
+                const x = getXPosition(index);
+                const y = 160 - ((item.revenue - minRevenue) / range) * 120;
+                return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+              }).join(' ')}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="3"
+            />
+          )}
+          
+          {/* Data points */}
+          {data.map((item, index) => {
+            const x = getXPosition(index);
+            const y = 160 - ((item.revenue - minRevenue) / range) * 120;
+            return (
+              <circle
+                key={index}
+                cx={x}
+                cy={y}
+                r="4"
+                fill="#3b82f6"
+                stroke="white"
+                strokeWidth="2"
+              />
+            );
+          })}
+          
+          {/* X-axis labels */}
+          {data.map((item, index) => {
+            const x = getXPosition(index);
+            return (
+              <text
+                key={index}
+                x={x}
+                y="190"
+                textAnchor="middle"
+                className="text-xs fill-gray-600"
+              >
+                {item.month}
+              </text>
+            );
+          })}
+          
+          {/* Y-axis labels */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+            const value = minRevenue + ratio * range;
+            return (
+              <text
+                key={i}
+                x="35"
+                y={165 - ratio * 120}
+                textAnchor="end"
+                className="text-xs fill-gray-600"
+              >
+                ₹{Math.round(value).toLocaleString()}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+    );
   };
 
   return (
@@ -4988,375 +5030,134 @@ function ReportsDashboard({
               </span>
             </div>
           </div>
-          <p className="text-gray-600">Comprehensive insights into your institution's performance</p>
+          <p className="text-gray-600">Real-time insights into your institution's performance</p>
           <p className="text-xs text-gray-500 mt-1">Last updated: {lastRefreshTime.toLocaleTimeString()}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={() => {
-              loadAnalyticsData();
-              onRefresh();
-            }}
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Refresh'}
-          </Button>
+        <Button
+          onClick={handleRefresh}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Loading...' : 'Refresh'}
+        </Button>
+      </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800">{error}</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card>
-        <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Total Students</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? (
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  ) : (
-                    analyticsData.studentGrowth.reduce((sum, item) => sum + item.students, 0)
-                  )}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {analyticsData.studentGrowth.length > 0 ? 'Real data from database' : 'No data available'}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-        </CardContent>
-      </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-    </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? (
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  ) : (
-                    `₹${analyticsData.revenueData.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}`
-                  )}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {analyticsData.revenueData.length > 0 ? 'From completed transactions' : 'No transactions found'}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-      <Card>
-        <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Active Courses</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? (
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  ) : (
-                    analyticsData.coursePerformance.length
-                  )}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {analyticsData.coursePerformance.length > 0 ? 'Courses in database' : 'No courses found'}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Faculty Members</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? (
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  ) : (
-                    analyticsData.facultyMetrics.length
-                  )}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {analyticsData.facultyMetrics.length > 0 ? 'Faculty in database' : 'No faculty data'}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <UserCheck className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Section */}
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Student Growth Chart */}
+        {/* Students Per Course Bar Chart */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Student Growth Trend
-                  <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                </CardTitle>
-                <p className="text-sm text-gray-600">Student enrollment over time</p>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Students Per Course
+              <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+            </CardTitle>
+            <p className="text-sm text-gray-600">Total student enrollments by course</p>
           </CardHeader>
           <CardContent>
-            <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Chart visualization would be here</p>
-                <p className="text-sm text-gray-400">Integration with charting library needed</p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <p className="text-gray-500">Loading course data...</p>
               </div>
-            </div>
+            ) : studentsPerCourse.length > 0 ? (
+              <BarChart data={studentsPerCourse} />
+            ) : (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No course enrollment data available</p>
+                <p className="text-sm text-gray-400 mt-1">Student enrollments will appear here</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Revenue Chart */}
+        {/* Monthly Revenue Line Chart */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Revenue Analysis
-                  <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                </CardTitle>
-                <p className="text-sm text-gray-600">Monthly revenue breakdown</p>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Monthly Revenue Trend
+              <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+            </CardTitle>
+            <p className="text-sm text-gray-600">Revenue from paid fees over time</p>
           </CardHeader>
           <CardContent>
-            <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Revenue chart would be here</p>
-                <p className="text-sm text-gray-400">Integration with charting library needed</p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <p className="text-gray-500">Loading revenue data...</p>
               </div>
-            </div>
+            ) : monthlyRevenue.length > 0 ? (
+              <LineChart data={monthlyRevenue} />
+            ) : (
+              <div className="text-center py-8">
+                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No revenue data available</p>
+                <p className="text-sm text-gray-400 mt-1">Paid fees will appear here</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Course Performance Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Course Performance
-                <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              </CardTitle>
-              <p className="text-sm text-gray-600">Performance metrics for all courses</p>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Students</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {studentsPerCourse.reduce((sum, item) => sum + item.students, 0)}
+                </p>
+              </div>
+              <Users className="h-8 w-8 text-blue-600" />
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Course Name</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Enrollments</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Completion Rate</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Rating</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      <p className="text-gray-500">Loading course data...</p>
-                    </td>
-                  </tr>
-                ) : analyticsData.coursePerformance.length > 0 ? (
-                  analyticsData.coursePerformance.map((course, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium">{course.name}</td>
-                      <td className="py-3 px-4">{course.enrollments || 'N/A'}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${course.completion || 0}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm">{course.completion || 0}%</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span>{course.rating || 'N/A'}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 font-medium">
-                        {course.enrollments ? `₹${(course.enrollments * 500).toLocaleString()}` : 'N/A'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
-                      No course data available. Create some courses to see analytics.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Faculty Performance */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                Faculty Performance
-                <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              </CardTitle>
-              <p className="text-sm text-gray-600">Faculty metrics and performance indicators</p>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{monthlyRevenue.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}
+                </p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-600" />
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <p className="text-gray-500">Loading faculty data...</p>
-            </div>
-          ) : analyticsData.facultyMetrics.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {analyticsData.facultyMetrics.map((faculty, index) => (
-                <div key={index} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">{faculty.name}</h4>
-                      <p className="text-sm text-gray-600">{faculty.courses} courses</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Students:</span>
-                      <span className="font-medium">{faculty.students}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Rating:</span>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                        <span className="font-medium">{faculty.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No faculty data available</p>
-              <p className="text-sm text-gray-400 mt-1">Faculty metrics will appear here when available</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Weekly Enrollment Trends */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Weekly Enrollment Trends
-          </CardTitle>
-          <p className="text-sm text-gray-600">Enrollment patterns by day of the week</p>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">Weekly trends chart would be here</p>
-              <p className="text-sm text-gray-400">Integration with charting library needed</p>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Courses</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {studentsPerCourse.length}
+                </p>
+              </div>
+              <BookOpen className="h-8 w-8 text-purple-600" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Export and Actions */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Export Reports</h3>
-              <p className="text-sm text-gray-600">Download detailed reports in various formats</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Excel
-              </Button>
-              <Button variant="outline" size="sm">
-                <Share className="h-4 w-4 mr-2" />
-                Share Report
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
