@@ -31,10 +31,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { 
   Building2, 
   Users, 
-  BookOpen, 
+  BookOpen,
+  Plus,
+  Trash2,
+  Mail,
+  Phone,
+  GraduationCap, 
   Settings, 
   Bell,
-  Plus,
   Eye,
   Star,
   Shield,
@@ -45,14 +49,11 @@ import {
   AlertCircle,
   MessageSquare,
   UserPlus,
-  EyeIcon,
-  Phone,
   DollarSign,
   Calendar,
   RefreshCw,
   BarChart3,
   Activity,
-  GraduationCap,
   CreditCard,
   ThumbsUp,
   Edit3,
@@ -945,7 +946,7 @@ function DashboardHome({
                     <p className="text-xs text-gray-500">Total views</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <EyeIcon className="h-6 w-6 text-purple-600" />
+                    <Eye className="h-6 w-6 text-purple-600" />
                   </div>
                 </div>
               </CardContent>
@@ -3716,179 +3717,150 @@ function FacultyDashboard({
   lastRefreshTime: Date;
   onRefresh: () => void;
 }) {
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
-  const [facultyData, setFacultyData] = useState({
-    faculty: [],
-    stats: {
-      total: 0,
-      active: 0,
-      onLeave: 0,
-      newHires: 0,
-      thisMonth: 0
-    }
-  });
   const [showAddFaculty, setShowAddFaculty] = useState(false);
-  const [selectedFaculty, setSelectedFaculty] = useState(null);
+  const [facultyForm, setFacultyForm] = useState({
+    name: '',
+    subject: '',
+    email: '',
+    contactNumber: ''
+  });
+  const [faculty, setFaculty] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
-  // Real data fetching from database
+  // Load faculty data on component mount
   useEffect(() => {
-    loadFacultyData();
-  }, [selectedDepartment]);
+    loadFaculty();
+  }, []);
 
-  const loadFacultyData = async () => {
+  const loadFaculty = async () => {
     setIsLoading(true);
     try {
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         console.error('User not authenticated');
-        setIsLoading(false);
         return;
       }
 
-      // Fetch faculty data from database
-      const [faculty, stats] = await Promise.all([
-        fetchFaculty(user.id),
-        fetchFacultyStats(user.id)
-      ]);
+      const { data, error } = await supabase
+        .from('faculty')
+        .select('*')
+        .eq('institution_id', user.id)
+        .order('created_at', { ascending: false });
 
-      setFacultyData({
-        faculty,
-        stats
-      });
-
+      if (error) {
+        console.error('Error loading faculty:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load faculty data",
+          variant: "destructive",
+        });
+      } else {
+        setFaculty(data || []);
+      }
     } catch (error) {
-      console.error('Error loading faculty data:', error);
+      console.error('Error loading faculty:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch faculty data
-  const fetchFaculty = async (userId: string) => {
-    try {
-      // For now, we'll create a mock structure since faculty table might not exist
-      // In real implementation, this would query a faculty/staff table
-      const { data: courses, error: coursesError } = await supabase
-        .from('courses')
-        .select('id, title, created_at, tutor_id')
-        .eq('tutor_id', userId);
+  const handleInputChange = (field: string, value: string) => {
+    setFacultyForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
-      if (coursesError) {
-        console.error('Error fetching courses for faculty:', coursesError);
-        return [];
+  const handleSubmit = async () => {
+    // Validate form
+    if (!facultyForm.name || !facultyForm.subject || !facultyForm.email || !facultyForm.contactNumber) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
       }
 
-      // Mock faculty based on courses (in real implementation, this would be actual faculty)
-      const mockFaculty = (courses || []).map((course, index) => ({
-        id: `faculty_${course.id}_${index}`,
-        name: `Dr. ${['Smith', 'Johnson', 'Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore'][index % 8]}`,
-        email: `faculty${index + 1}@institution.edu`,
-        department: ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'History', 'Computer Science', 'Economics'][index % 8],
-        position: ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer'][index % 4],
-        phone: `+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        hireDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000 * 5).toISOString(),
-        status: ['active', 'on-leave', 'inactive'][Math.floor(Math.random() * 3)],
-        courses: [course.title],
-        rating: (Math.random() * 2 + 3).toFixed(1), // 3.0 to 5.0
-        students: Math.floor(Math.random() * 50) + 10,
-        experience: Math.floor(Math.random() * 20) + 1,
-        qualifications: ['PhD', 'MSc', 'BSc'][Math.floor(Math.random() * 3)],
-        specializations: ['Research', 'Teaching', 'Administration'][Math.floor(Math.random() * 3)],
-        salary: Math.floor(Math.random() * 50000) + 50000,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${course.id}`
-      }));
+      const { data, error } = await supabase
+        .from('faculty')
+        .insert({
+          institution_id: user.id,
+          name: facultyForm.name,
+          subject_expertise: facultyForm.subject,
+          email: facultyForm.email,
+          contact_number: facultyForm.contactNumber
+        })
+        .select();
 
-      // Filter by department if not 'all'
-      if (selectedDepartment !== 'all') {
-        return mockFaculty.filter(faculty => faculty.department === selectedDepartment);
+      if (error) {
+        throw error;
       }
 
-      return mockFaculty;
+      toast({
+        title: "Success",
+        description: "Faculty member added successfully",
+      });
+
+      // Reset form and close modal
+      setFacultyForm({
+        name: '',
+        subject: '',
+        email: '',
+        contactNumber: ''
+      });
+      setShowAddFaculty(false);
+
+      // Reload faculty data
+      await loadFaculty();
+
     } catch (error) {
-      console.error('Error in fetchFaculty:', error);
-      return [];
+      console.error('Error adding faculty:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add faculty member",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Fetch faculty statistics
-  const fetchFacultyStats = async (userId: string) => {
+  const handleDeleteFaculty = async (facultyId: string) => {
     try {
-      const faculty = await fetchFaculty(userId);
-      
-      const stats = {
-        total: faculty.length,
-        active: faculty.filter(f => f.status === 'active').length,
-        onLeave: faculty.filter(f => f.status === 'on-leave').length,
-        newHires: faculty.filter(f => {
-          const hireDate = new Date(f.hireDate);
-          const now = new Date();
-          const diffTime = Math.abs(now - hireDate);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return diffDays <= 30; // New hires in last 30 days
-        }).length,
-        thisMonth: faculty.filter(f => {
-          const hireDate = new Date(f.hireDate);
-          const now = new Date();
-          return hireDate.getMonth() === now.getMonth() && hireDate.getFullYear() === now.getFullYear();
-        }).length
-      };
+      const { error } = await supabase
+        .from('faculty')
+        .delete()
+        .eq('id', facultyId);
 
-      return stats;
-    } catch (error) {
-      console.error('Error in fetchFacultyStats:', error);
-      return {
-        total: 0,
-        active: 0,
-        onLeave: 0,
-        newHires: 0,
-        thisMonth: 0
-      };
-    }
-  };
+      if (error) {
+        throw error;
+      }
 
-  const handleStatusChange = async (facultyId: string, newStatus: string) => {
-    try {
-      // In real implementation, this would update the database
-      console.log(`Updating faculty ${facultyId} to status: ${newStatus}`);
-      
-      // Update local state
-      setFacultyData(prev => ({
-        ...prev,
-        faculty: prev.faculty.map(faculty => 
-          faculty.id === facultyId ? { ...faculty, status: newStatus } : faculty
-        )
-      }));
+      toast({
+        title: "Success",
+        description: "Faculty member deleted successfully",
+      });
 
-      // Refresh stats
-      const stats = await fetchFacultyStats('current_user');
-      setFacultyData(prev => ({
-        ...prev,
-        stats
-      }));
+      // Reload faculty data
+      await loadFaculty();
 
     } catch (error) {
-      console.error('Error updating faculty status:', error);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'on-leave': return 'bg-yellow-100 text-yellow-800';
-      case 'inactive': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPositionColor = (position: string) => {
-    switch (position) {
-      case 'Professor': return 'bg-purple-100 text-purple-800';
-      case 'Associate Professor': return 'bg-blue-100 text-blue-800';
-      case 'Assistant Professor': return 'bg-green-100 text-green-800';
-      case 'Lecturer': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      console.error('Error deleting faculty:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete faculty member",
+        variant: "destructive",
+      });
     }
   };
 
@@ -3910,35 +3882,6 @@ function FacultyDashboard({
           <p className="text-xs text-gray-500 mt-1">Last updated: {lastRefreshTime.toLocaleTimeString()}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              <SelectItem value="Mathematics">Mathematics</SelectItem>
-              <SelectItem value="Physics">Physics</SelectItem>
-              <SelectItem value="Chemistry">Chemistry</SelectItem>
-              <SelectItem value="Biology">Biology</SelectItem>
-              <SelectItem value="English">English</SelectItem>
-              <SelectItem value="History">History</SelectItem>
-              <SelectItem value="Computer Science">Computer Science</SelectItem>
-              <SelectItem value="Economics">Economics</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={() => {
-              loadFacultyData();
-              onRefresh();
-            }}
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Loading...' : 'Refresh'}
-          </Button>
           <Button
             onClick={() => setShowAddFaculty(true)}
             size="sm"
@@ -3950,245 +3893,77 @@ function FacultyDashboard({
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-      <Card>
-        <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Total Faculty</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : facultyData.stats.total}
-                </p>
-                <p className="text-sm text-gray-500">All faculty members</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-        </CardContent>
-      </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : facultyData.stats.active}
-                </p>
-                <p className="text-sm text-gray-500">Currently working</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">On Leave</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : facultyData.stats.onLeave}
-                </p>
-                <p className="text-sm text-gray-500">Currently on leave</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">New Hires</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : facultyData.stats.newHires}
-                </p>
-                <p className="text-sm text-gray-500">Last 30 days</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <UserPlus className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : facultyData.stats.thisMonth}
-                </p>
-                <p className="text-sm text-gray-500">New faculty</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Faculty Grid */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Faculty Members
-                <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              </CardTitle>
-              <p className="text-sm text-gray-600">Faculty directory and management</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <p className="text-gray-500">Loading faculty...</p>
-            </div>
-          ) : facultyData.faculty.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {facultyData.faculty.map((faculty) => (
-                <Card key={faculty.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={faculty.avatar} alt={faculty.name} />
-                        <AvatarFallback>{faculty.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 truncate">{faculty.name}</h3>
-                          <Badge className={getStatusColor(faculty.status)}>
-                            {faculty.status.replace('-', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-1">{faculty.position}</p>
-                        <p className="text-sm text-gray-500 mb-2">{faculty.department}</p>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={getPositionColor(faculty.position)}>
-                            {faculty.position}
-                          </Badge>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                            <span className="text-xs text-gray-600">{faculty.rating}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1 text-xs text-gray-500">
-                          <p>📧 {faculty.email}</p>
-                          <p>📞 {faculty.phone}</p>
-                          <p>👥 {faculty.students} students</p>
-                          <p>📚 {faculty.experience} years experience</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedFaculty(faculty)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          {faculty.status === 'active' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatusChange(faculty.id, 'on-leave')}
-                              className="text-yellow-600 hover:text-yellow-700"
-                            >
-                              <Clock className="h-4 w-4 mr-1" />
-                              Leave
-                            </Button>
-                          )}
-                          {faculty.status === 'on-leave' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatusChange(faculty.id, 'active')}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Activate
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+      {/* Faculty Cards */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <p className="text-gray-500">Loading faculty...</p>
+        </div>
+      ) : faculty.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {faculty.map((facultyMember) => (
+            <Card key={facultyMember.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <GraduationCap className="h-6 w-6 text-blue-600" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No faculty found</p>
-              <p className="text-sm text-gray-400 mt-1">
-                {selectedDepartment === 'all' 
-                  ? 'Faculty members will appear here when added'
-                  : `No faculty found in ${selectedDepartment} department`
-                }
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-              <p className="text-sm text-gray-600">Common faculty management tasks</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export Faculty
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Department Settings
-              </Button>
-              <Button variant="outline" size="sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Faculty Reports
-              </Button>
-            </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{facultyMember.name}</h3>
+                      <p className="text-sm text-gray-600">{facultyMember.subject_expertise}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteFaculty(facultyMember.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail className="h-4 w-4" />
+                    <span className="truncate">{facultyMember.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone className="h-4 w-4" />
+                    <span>{facultyMember.contact_number}</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    Added on {new Date(facultyMember.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center min-h-[400px] border-2 border-dashed border-gray-300 rounded-lg">
+          <div className="text-center">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Faculty Members</h3>
+            <p className="text-gray-500 mb-4">Get started by adding your first faculty member</p>
+            <Button
+              onClick={() => setShowAddFaculty(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Faculty Member
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Add Faculty Dialog */}
+      {/* Add Faculty Modal */}
       <Dialog open={showAddFaculty} onOpenChange={setShowAddFaculty}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Faculty Member</DialogTitle>
             <DialogDescription>
@@ -4196,155 +3971,65 @@ function FacultyDashboard({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Dr. John Smith" />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="john.smith@institution.edu" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="department">Department</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mathematics">Mathematics</SelectItem>
-                    <SelectItem value="physics">Physics</SelectItem>
-                    <SelectItem value="chemistry">Chemistry</SelectItem>
-                    <SelectItem value="biology">Biology</SelectItem>
-                    <SelectItem value="english">English</SelectItem>
-                    <SelectItem value="history">History</SelectItem>
-                    <SelectItem value="computer-science">Computer Science</SelectItem>
-                    <SelectItem value="economics">Economics</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="position">Position</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="professor">Professor</SelectItem>
-                    <SelectItem value="associate-professor">Associate Professor</SelectItem>
-                    <SelectItem value="assistant-professor">Assistant Professor</SelectItem>
-                    <SelectItem value="lecturer">Lecturer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="+1-555-123-4567" />
-              </div>
-              <div>
-                <Label htmlFor="qualifications">Qualifications</Label>
-                <Input id="qualifications" placeholder="PhD, MSc, BSc" />
-              </div>
+            <div>
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                placeholder="Dr. John Smith" 
+                value={facultyForm.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+              />
             </div>
             <div>
-              <Label htmlFor="specializations">Specializations</Label>
-              <Textarea id="specializations" placeholder="Research areas and specializations" />
+              <Label htmlFor="subject">Subject/Expertise</Label>
+              <Input 
+                id="subject" 
+                placeholder="Mathematics, Physics, etc." 
+                value={facultyForm.subject}
+                onChange={(e) => handleInputChange('subject', e.target.value)}
+              />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddFaculty(false)}>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="john.smith@institution.edu" 
+                value={facultyForm.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="contactNumber">Contact Number</Label>
+              <Input 
+                id="contactNumber" 
+                placeholder="+1-555-123-4567" 
+                value={facultyForm.contactNumber}
+                onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAddFaculty(false)}
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
-              <Button onClick={() => {
-                // In real implementation, this would save to database
-                console.log('Adding new faculty member');
-                setShowAddFaculty(false);
-                loadFacultyData();
-              }}>
-                Add Faculty Member
+              <Button onClick={handleSubmit} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Faculty'
+                )}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Faculty Detail Dialog */}
-      {selectedFaculty && (
-        <Dialog open={!!selectedFaculty} onOpenChange={() => setSelectedFaculty(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Faculty Details</DialogTitle>
-              <DialogDescription>
-                Detailed information about {selectedFaculty.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={selectedFaculty.avatar} alt={selectedFaculty.name} />
-                  <AvatarFallback>{selectedFaculty.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-xl font-semibold">{selectedFaculty.name}</h3>
-                  <p className="text-gray-600">{selectedFaculty.position}</p>
-                  <p className="text-gray-500">{selectedFaculty.department}</p>
-                  <Badge className={getStatusColor(selectedFaculty.status)}>
-                    {selectedFaculty.status.replace('-', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Email</Label>
-                  <p className="text-sm text-gray-600">{selectedFaculty.email}</p>
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <p className="text-sm text-gray-600">{selectedFaculty.phone}</p>
-                </div>
-                <div>
-                  <Label>Experience</Label>
-                  <p className="text-sm text-gray-600">{selectedFaculty.experience} years</p>
-                </div>
-                <div>
-                  <Label>Rating</Label>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="text-sm text-gray-600">{selectedFaculty.rating}</span>
-                  </div>
-                </div>
-                <div>
-                  <Label>Students</Label>
-                  <p className="text-sm text-gray-600">{selectedFaculty.students} students</p>
-                </div>
-                <div>
-                  <Label>Hire Date</Label>
-                  <p className="text-sm text-gray-600">{new Date(selectedFaculty.hireDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-              <div>
-                <Label>Courses</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedFaculty.courses.map((course, index) => (
-                    <Badge key={index} variant="outline">{course}</Badge>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Qualifications</Label>
-                <p className="text-sm text-gray-600">{selectedFaculty.qualifications}</p>
-              </div>
-              <div>
-                <Label>Specializations</Label>
-                <p className="text-sm text-gray-600">{selectedFaculty.specializations}</p>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
