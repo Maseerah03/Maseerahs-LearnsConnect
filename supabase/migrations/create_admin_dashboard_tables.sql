@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS fees (
     name VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL CHECK (type IN ('percentage', 'fixed')),
     value DECIMAL(10,2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'USD',
+    currency VARCHAR(10) DEFAULT 'INR',
     description TEXT,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     amount DECIMAL(10,2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'USD',
+    currency VARCHAR(10) DEFAULT 'INR',
     type VARCHAR(50) NOT NULL CHECK (type IN ('payment', 'payout', 'refund', 'fee')),
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'cancelled')),
     description TEXT,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS payouts (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     amount DECIMAL(10,2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'USD',
+    currency VARCHAR(10) DEFAULT 'INR',
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
     method VARCHAR(50) NOT NULL CHECK (method IN ('bank_transfer', 'paypal', 'stripe')),
     account_details TEXT NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS refunds (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     transaction_id UUID REFERENCES transactions(id) ON DELETE CASCADE,
     amount DECIMAL(10,2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'USD',
+    currency VARCHAR(10) DEFAULT 'INR',
     reason TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'processed', 'rejected')),
     admin_notes TEXT,
@@ -187,9 +187,9 @@ CREATE POLICY "Users can create refunds" ON refunds
 -- 11. Insert sample data for testing
 -- Sample fees
 INSERT INTO fees (name, type, value, currency, description, is_active) VALUES
-('Platform Fee', 'percentage', 5.00, 'USD', 'Standard platform fee for all transactions', true),
-('Processing Fee', 'fixed', 0.30, 'USD', 'Payment processing fee per transaction', true),
-('Premium Subscription', 'fixed', 9.99, 'USD', 'Monthly premium subscription fee', true)
+('Platform Fee', 'percentage', 5.00, 'INR', 'Standard platform fee for all transactions', true),
+('Processing Fee', 'fixed', 0.30, 'INR', 'Payment processing fee per transaction', true),
+('Premium Subscription', 'fixed', 9.99, 'INR', 'Monthly premium subscription fee', true)
 ON CONFLICT DO NOTHING;
 
 -- 12. Create admin role and permissions

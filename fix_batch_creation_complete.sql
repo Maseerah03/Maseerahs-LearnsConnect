@@ -114,7 +114,7 @@ SELECT
         "fee_schedule": {
             "type": "fixed",
             "amount": "5000",
-            "currency": "USD",
+            "currency": "INR",
             "installments": 1
         },
         "price": 5000,

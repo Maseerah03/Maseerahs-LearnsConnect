@@ -234,7 +234,7 @@ export default function MyClasses({ onNavigateToBookSessions }: { onNavigateToBo
                   level: institutionCourse.level || 'beginner',
                   duration_hours: institutionCourse.duration || 0,
                   price: institutionCourse.fee_structure?.amount || 0,
-                  currency: institutionCourse.fee_structure?.currency || 'USD',
+                  currency: institutionCourse.fee_structure?.currency || 'INR',
                   max_students: institutionCourse.students_enrolled || 0,
                   is_active: institutionCourse.status === 'Active',
                   status: institutionCourse.status,

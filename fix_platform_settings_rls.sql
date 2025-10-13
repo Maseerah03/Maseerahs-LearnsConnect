@@ -18,11 +18,11 @@ ALTER TABLE public.platform_settings
 ALTER COLUMN platform_name SET DEFAULT 'LearnsConnect',
 ALTER COLUMN admin_email SET DEFAULT 'admin@learnsconnect.com',
 ALTER COLUMN phone_number SET DEFAULT '+1 (555) 123-4567',
-ALTER COLUMN footer_text SET DEFAULT '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.';
+ALTER COLUMN footer_text SET DEFAULT '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.';
 
 -- Insert default settings if table is empty
 INSERT INTO public.platform_settings (platform_name, admin_email, phone_number, footer_text)
-SELECT 'LearnsConnect', 'admin@learnsconnect.com', '+1 (555) 123-4567', '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.'
+SELECT 'LearnsConnect', 'admin@learnsconnect.com', '+1 (555) 123-4567', '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.'
 WHERE NOT EXISTS (SELECT 1 FROM public.platform_settings);
 
 -- Verify the table structure and data

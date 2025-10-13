@@ -99,7 +99,7 @@ const sampleTutors: TutorCard[] = [
     rating: 4.7,
     location: 'Seattle, WA',
     experience: '5+ years',
-    price: '$48/hr'
+    price: '₹48/hr'
   }
 ];
 ```

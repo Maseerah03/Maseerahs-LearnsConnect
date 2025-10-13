@@ -53,7 +53,7 @@ export const Header = () => {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/login">
+            <Link to="/signup-choice">
               <Button variant="ghost" size="sm">
                 Sign In
               </Button>
@@ -90,7 +90,7 @@ export const Header = () => {
               ))}
 
               <div className="flex flex-col space-y-2 pt-4 border-t">
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/signup-choice" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full justify-start">
                     Sign In
                   </Button>

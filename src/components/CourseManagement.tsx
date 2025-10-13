@@ -571,7 +571,7 @@ export default function CourseManagement({ onRefresh }: CourseManagementProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="INR">INR (₹)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="INR">INR (₹)</SelectItem>
                       <SelectItem value="EUR">EUR (€)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -810,7 +810,7 @@ export default function CourseManagement({ onRefresh }: CourseManagementProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="INR">INR (₹)</SelectItem>
-                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
                   </SelectContent>
                 </Select>

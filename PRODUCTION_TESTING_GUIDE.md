@@ -74,14 +74,14 @@ DELETE FROM users WHERE email LIKE '%@example.com';
 ```sql
 -- Insert mock payment transactions
 INSERT INTO transactions (user_id, amount, currency, type, status, description, created_at) VALUES
-((SELECT id FROM public_users WHERE email = 'student1@test.com'), 50.00, 'USD', 'payment', 'completed', 'Payment for Math tutoring session', NOW() - INTERVAL '2 days'),
-((SELECT id FROM public_users WHERE email = 'student2@test.com'), 45.00, 'USD', 'payment', 'completed', 'Payment for Physics tutoring session', NOW() - INTERVAL '1 day'),
-((SELECT id FROM public_users WHERE email = 'student1@test.com'), 25.00, 'USD', 'payment', 'pending', 'Payment for English tutoring session', NOW() - INTERVAL '6 hours');
+((SELECT id FROM public_users WHERE email = 'student1@test.com'), 50.00, 'INR', 'payment', 'completed', 'Payment for Math tutoring session', NOW() - INTERVAL '2 days'),
+((SELECT id FROM public_users WHERE email = 'student2@test.com'), 45.00, 'INR', 'payment', 'completed', 'Payment for Physics tutoring session', NOW() - INTERVAL '1 day'),
+((SELECT id FROM public_users WHERE email = 'student1@test.com'), 25.00, 'INR', 'payment', 'pending', 'Payment for English tutoring session', NOW() - INTERVAL '6 hours');
 
 -- Insert mock payouts
 INSERT INTO payouts (user_id, amount, currency, status, method, account_details, created_at) VALUES
-((SELECT id FROM public_users WHERE email = 'tutor1@test.com'), 100.00, 'USD', 'pending', 'bank_transfer', 'Bank: Chase, Account: ****1234', NOW() - INTERVAL '1 day'),
-((SELECT id FROM public_users WHERE email = 'tutor2@test.com'), 75.00, 'USD', 'processing', 'paypal', 'PayPal: tutor2@test.com', NOW() - INTERVAL '12 hours');
+((SELECT id FROM public_users WHERE email = 'tutor1@test.com'), 100.00, 'INR', 'pending', 'bank_transfer', 'Bank: Chase, Account: ****1234', NOW() - INTERVAL '1 day'),
+((SELECT id FROM public_users WHERE email = 'tutor2@test.com'), 75.00, 'INR', 'processing', 'paypal', 'PayPal: tutor2@test.com', NOW() - INTERVAL '12 hours');
 ```
 
 ### **What to Verify:**

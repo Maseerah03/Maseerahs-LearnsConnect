@@ -123,20 +123,20 @@ ON CONFLICT DO NOTHING;
 
 -- Insert test transactions
 INSERT INTO transactions (user_id, amount, currency, type, status, description, created_at) VALUES
-('550e8400-e29b-41d4-a716-446655440002', 50.00, 'USD', 'payment', 'completed', 'Payment for math tutoring session', NOW() - INTERVAL '2 days'),
-('550e8400-e29b-41d4-a716-446655440004', 45.00, 'USD', 'payment', 'completed', 'Payment for physics tutoring session', NOW() - INTERVAL '1 day'),
-('550e8400-e29b-41d4-a716-446655440002', 25.00, 'USD', 'payment', 'pending', 'Payment for English tutoring session', NOW() - INTERVAL '6 hours')
+('550e8400-e29b-41d4-a716-446655440002', 50.00, 'INR', 'payment', 'completed', 'Payment for math tutoring session', NOW() - INTERVAL '2 days'),
+('550e8400-e29b-41d4-a716-446655440004', 45.00, 'INR', 'payment', 'completed', 'Payment for physics tutoring session', NOW() - INTERVAL '1 day'),
+('550e8400-e29b-41d4-a716-446655440002', 25.00, 'INR', 'payment', 'pending', 'Payment for English tutoring session', NOW() - INTERVAL '6 hours')
 ON CONFLICT DO NOTHING;
 
 -- Insert test payouts
 INSERT INTO payouts (user_id, amount, currency, status, method, account_details, created_at) VALUES
-('550e8400-e29b-41d4-a716-446655440001', 100.00, 'USD', 'pending', 'bank_transfer', 'Bank: Chase, Account: ****1234', NOW() - INTERVAL '1 day'),
-('550e8400-e29b-41d4-a716-446655440003', 75.00, 'USD', 'processing', 'paypal', 'PayPal: mike.johnson@example.com', NOW() - INTERVAL '12 hours')
+('550e8400-e29b-41d4-a716-446655440001', 100.00, 'INR', 'pending', 'bank_transfer', 'Bank: Chase, Account: ****1234', NOW() - INTERVAL '1 day'),
+('550e8400-e29b-41d4-a716-446655440003', 75.00, 'INR', 'processing', 'paypal', 'PayPal: mike.johnson@example.com', NOW() - INTERVAL '12 hours')
 ON CONFLICT DO NOTHING;
 
 -- Insert test refunds
 INSERT INTO refunds (transaction_id, amount, currency, reason, status, created_at) VALUES
-((SELECT id FROM transactions WHERE description = 'Payment for English tutoring session' LIMIT 1), 25.00, 'USD', 'Student cancelled session', 'pending', NOW() - INTERVAL '4 hours')
+((SELECT id FROM transactions WHERE description = 'Payment for English tutoring session' LIMIT 1), 25.00, 'INR', 'Student cancelled session', 'pending', NOW() - INTERVAL '4 hours')
 ON CONFLICT DO NOTHING;
 
 -- Verify data was inserted

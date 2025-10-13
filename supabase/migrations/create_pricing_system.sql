@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS pricing_tiers (
 CREATE TABLE IF NOT EXISTS pricing_config (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   base_price DECIMAL(10,2) NOT NULL DEFAULT 20.00,
-  currency TEXT NOT NULL DEFAULT 'USD',
+  currency TEXT NOT NULL DEFAULT 'INR',
   billing_cycle TEXT NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly')),
   annual_discount_percent DECIMAL(5,2) DEFAULT 20.00,
   is_active BOOLEAN DEFAULT true,
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS subscription_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   subscription_id UUID NOT NULL REFERENCES user_subscriptions(id) ON DELETE CASCADE,
   amount DECIMAL(10,2) NOT NULL,
-  currency TEXT NOT NULL DEFAULT 'USD',
+  currency TEXT NOT NULL DEFAULT 'INR',
   payment_method TEXT,
   payment_status TEXT NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded')),
   transaction_id TEXT,

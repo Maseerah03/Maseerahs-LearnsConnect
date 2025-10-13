@@ -35,7 +35,7 @@ The top section displays four critical metrics at a glance:
 #### **Total Revenue (Green Card)**
 - **Metric**: Total platform revenue
 - **Sub-metric**: Revenue growth rate percentage
-- **Icon**: Dollar sign ($)
+- **Icon**: Indian Rupee sign (₹)
 - **Color**: Green gradient
 - **Use Case**: Track financial performance and growth
 

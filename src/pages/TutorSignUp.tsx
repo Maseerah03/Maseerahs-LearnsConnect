@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,8 @@ import {
   AlertCircle,
   Phone,
   CreditCard,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { emailRegex } from "@/lib/validation";
@@ -153,6 +154,8 @@ export default function TutorSignUp() {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subjectSearchTerm, setSubjectSearchTerm] = useState("");
+  const [customSubject, setCustomSubject] = useState("");
   const totalSteps = 4;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -160,14 +163,46 @@ export default function TutorSignUp() {
   const titles = ["Mr.", "Mrs.", "Ms.", "Dr."];
   const qualifications = ["10th", "12th", "Graduate", "Post-Graduate", "PhD"];
   const experienceLevels = ["Fresher", "1-2 years", "3-5 years", "5+ years"];
-  const subjects = [
-    "Mathematics", "Physics", "Chemistry", "Biology", "English", "Hindi",
-    "History", "Geography", "Economics", "Computer Science", "Programming"
-  ];
+  const subjectCategories = {
+    academic: [
+      "Mathematics", "Physics", "Chemistry", "Biology", "English", 
+      "Hindi", "History", "Geography", "Economics", "Political Science"
+    ],
+    professional: [
+      "Programming", "Web Development", "Data Science", "Digital Marketing",
+      "Graphic Design", "UI/UX Design", "Business Analytics", "Finance"
+    ],
+    creative: [
+      "Music", "Dance", "Painting", "Photography", "Cooking", 
+      "Creative Writing", "Theatre", "Yoga", "Meditation"
+    ],
+    testPrep: [
+      "JEE Main/Advanced", "NEET", "CAT", "GATE", "UPSC", 
+      "IELTS", "TOEFL", "GRE", "GMAT", "SSC"
+    ]
+  };
   const studentLevels = ["Primary", "Secondary", "Higher Secondary", "Graduate", "Professional"];
   const curriculums = ["CBSE", "ICSE", "State Board", "IB", "Cambridge", "NIOS"];
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const languages = ["English", "Hindi", "Bengali", "Tamil", "Telugu", "Marathi", "Gujarati"];
+
+  // Filter subjects based on search term
+  const filteredSubjectCategories = useMemo(() => {
+    if (!subjectSearchTerm.trim()) {
+      return subjectCategories;
+    }
+
+    const filtered: typeof subjectCategories = {};
+    Object.entries(subjectCategories).forEach(([category, subjects]) => {
+      const filteredSubjects = subjects.filter(subject =>
+        subject.toLowerCase().includes(subjectSearchTerm.toLowerCase())
+      );
+      if (filteredSubjects.length > 0) {
+        filtered[category] = filteredSubjects;
+      }
+    });
+    return filtered;
+  }, [subjectSearchTerm]);
 
   const validateField = (field: keyof TutorFormData, value: any) => {
     const newErrors = { ...errors };
@@ -269,6 +304,74 @@ export default function TutorSignUp() {
     setFormData({ ...formData, [field]: newArray });
   };
 
+  const handleAddCustomSubject = () => {
+    const trimmedSubject = customSubject.trim();
+    
+    if (!trimmedSubject) {
+      toast({
+        title: "Empty Subject",
+        description: "Please enter a subject name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (trimmedSubject.length < 2) {
+      toast({
+        title: "Subject Too Short",
+        description: "Subject name must be at least 2 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if subject already exists (case-insensitive)
+    const subjectExists = formData.subjects.some(subject => 
+      subject.toLowerCase() === trimmedSubject.toLowerCase()
+    );
+
+    if (subjectExists) {
+      toast({
+        title: "Subject Already Added",
+        description: `"${trimmedSubject}" is already in your subjects list.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if subject exists in predefined categories (case-insensitive)
+    const allPredefinedSubjects = Object.values(subjectCategories).flat();
+    const predefinedExists = allPredefinedSubjects.some(subject => 
+      subject.toLowerCase() === trimmedSubject.toLowerCase()
+    );
+
+    if (predefinedExists) {
+      toast({
+        title: "Subject Available in List",
+        description: `"${trimmedSubject}" is already available in the subject categories above. Please select it from the list instead.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setFormData({ 
+      ...formData, 
+      subjects: [...formData.subjects, trimmedSubject] 
+    });
+    setCustomSubject("");
+    toast({
+      title: "Subject Added",
+      description: `"${trimmedSubject}" has been added to your subjects.`,
+    });
+  };
+
+  const handleRemoveSubject = (subjectToRemove: string) => {
+    setFormData({ 
+      ...formData, 
+      subjects: formData.subjects.filter(subject => subject !== subjectToRemove) 
+    });
+  };
+
   const validateStep = (step: number) => {
     // Basic validation for each step
     const requiredFields: Record<number, (keyof TutorFormData)[]> = {
@@ -286,6 +389,14 @@ export default function TutorSignUp() {
         isValid = false;
       }
     });
+
+    // Additional validation for step 3 based on class type
+    if (step === 3) {
+      // Home tuition fee is required for visit_student and tutor_home class types
+      if ((formData.classType === "visit_student" || formData.classType === "tutor_home") && !formData.homeTuitionFee) {
+        isValid = false;
+      }
+    }
 
     if (step === 1 && (!formData.termsAccepted || !formData.backgroundVerificationAccepted)) {
       isValid = false;
@@ -813,20 +924,112 @@ export default function TutorSignUp() {
         <h3 className="text-lg font-semibold">Specialization</h3>
         
         <div className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label>Subjects/Skills to Teach *</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {subjects.map((subject) => (
-                <div key={subject} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`subject-${subject}`}
-                    checked={formData.subjects.includes(subject)}
-                    onCheckedChange={(checked) => handleArrayChange("subjects", subject, checked as boolean)}
-                  />
-                  <Label htmlFor={`subject-${subject}`} className="text-sm">{subject}</Label>
+            
+            {/* Search Input */}
+            <div className="space-y-2">
+              <Input
+                placeholder="Search subjects..."
+                value={subjectSearchTerm}
+                onChange={(e) => setSubjectSearchTerm(e.target.value)}
+                className="h-10"
+              />
+              {subjectSearchTerm && (
+                <p className="text-xs text-muted-foreground">
+                  Showing {Object.values(filteredSubjectCategories).flat().length} subjects matching "{subjectSearchTerm}"
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {Object.entries(filteredSubjectCategories).map(([category, subjects]) => (
+                <div key={category} className="space-y-3">
+                  <h4 className="font-medium text-primary capitalize text-sm">
+                    {category.replace(/([A-Z])/g, ' $1').trim()} Subjects
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {subjects.map((subject) => (
+                      <div key={subject} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`subject-${subject}`}
+                          checked={formData.subjects.includes(subject)}
+                          onCheckedChange={(checked) => handleArrayChange("subjects", subject, checked as boolean)}
+                        />
+                        <Label htmlFor={`subject-${subject}`} className="text-sm">{subject}</Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
+              
+              {Object.keys(filteredSubjectCategories).length === 0 && subjectSearchTerm && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No subjects found matching "{subjectSearchTerm}"</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSubjectSearchTerm("")}
+                    className="mt-2"
+                  >
+                    Clear Search
+                  </Button>
+                </div>
+              )}
             </div>
+            {/* Custom Subject Input */}
+            <div className="space-y-3">
+              <Label>Add Custom Subject</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Type a custom subject (e.g., Advanced Calculus, Machine Learning)"
+                  value={customSubject}
+                  onChange={(e) => setCustomSubject(e.target.value)}
+                  className="flex-1"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomSubject();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button"
+                  onClick={handleAddCustomSubject}
+                  disabled={!customSubject.trim()}
+                  variant="outline"
+                >
+                  Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Can't find your specialization? Add a custom subject here.
+              </p>
+            </div>
+
+            {formData.subjects.length > 0 && (
+              <div className="mt-4 p-3 bg-primary/5 rounded-lg">
+                <p className="text-sm font-medium text-primary mb-2">Selected Subjects ({formData.subjects.length}):</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.subjects.map((subject) => (
+                    <span 
+                      key={subject}
+                      className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full flex items-center gap-1"
+                    >
+                      {subject}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSubject(subject)}
+                        className="ml-1 hover:bg-primary-foreground/20 rounded-full p-0.5"
+                        title="Remove subject"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -880,22 +1083,34 @@ export default function TutorSignUp() {
           <div className="space-y-2">
             <Label>Class Type *</Label>
             <RadioGroup value={formData.classType} onValueChange={(value) => handleInputChange("classType", value)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="online" id="online" />
-                <Label htmlFor="online">Online</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="offline" id="offline" />
-                <Label htmlFor="offline">Offline</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="both" id="both" />
-                <Label htmlFor="both">Both</Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="online" id="online" />
+                  <div className="flex-1">
+                    <Label htmlFor="online" className="font-medium cursor-pointer">Online Mode</Label>
+                    <p className="text-sm text-muted-foreground">Teach students through video calls and online platforms</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="visit_student" id="visit_student" />
+                  <div className="flex-1">
+                    <Label htmlFor="visit_student" className="font-medium cursor-pointer">Visit Student (Home Visit)</Label>
+                    <p className="text-sm text-muted-foreground">Travel to student's home for in-person tutoring</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="tutor_home" id="tutor_home" />
+                  <div className="flex-1">
+                    <Label htmlFor="tutor_home" className="font-medium cursor-pointer">Tutor Tuition (Home Tuition at Tutor's Place)</Label>
+                    <p className="text-sm text-muted-foreground">Students come to your home/place for tutoring</p>
+                  </div>
+                </div>
               </div>
             </RadioGroup>
           </div>
 
-          {(formData.classType === "offline" || formData.classType === "both") && (
+          {/* Class Type Specific Options */}
+          {formData.classType === "visit_student" && (
             <div className="space-y-2">
               <Label>Maximum Travel Distance (km): {formData.maxTravelDistance}</Label>
               <Slider
@@ -906,6 +1121,31 @@ export default function TutorSignUp() {
                 step={5}
                 className="w-full"
               />
+              <p className="text-xs text-muted-foreground">
+                Set the maximum distance you're willing to travel for home visits
+              </p>
+            </div>
+          )}
+
+          {formData.classType === "online" && (
+            <div className="space-y-2">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-1">Online Teaching Setup</h4>
+                <p className="text-sm text-blue-700">
+                  Make sure you have a stable internet connection, good lighting, and a quiet environment for online classes.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {formData.classType === "tutor_home" && (
+            <div className="space-y-2">
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-medium text-green-900 mb-1">Home Tutoring Setup</h4>
+                <p className="text-sm text-green-700">
+                  Ensure you have a dedicated teaching space at your home with necessary equipment and materials.
+                </p>
+              </div>
             </div>
           )}
 
@@ -948,6 +1188,7 @@ export default function TutorSignUp() {
         <h3 className="text-lg font-semibold">Fee Structure</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Individual Class Fee - Always shown */}
           <div className="space-y-2">
             <Label htmlFor="individualFee">Individual Class Fee (per hour) * ₹</Label>
             <div className="relative">
@@ -961,8 +1202,12 @@ export default function TutorSignUp() {
                 required
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              One-on-one teaching rate
+            </p>
           </div>
 
+          {/* Group Class Fee - Always shown */}
           <div className="space-y-2">
             <Label htmlFor="groupFee">Group Class Fee (per hour) * ₹</Label>
             <div className="relative">
@@ -976,21 +1221,52 @@ export default function TutorSignUp() {
                 required
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Rate for group classes (2+ students)
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="homeTuitionFee">Home Tuition Fee (per hour) ₹</Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="homeTuitionFee"
-                placeholder="Enter hourly rate (optional)"
-                value={formData.homeTuitionFee}
-                onChange={(e) => handleInputChange("homeTuitionFee", e.target.value)}
-                className="pl-10 h-12"
-              />
+          {/* Home Visit Fee - Only for visit_student */}
+          {formData.classType === "visit_student" && (
+            <div className="space-y-2">
+              <Label htmlFor="homeTuitionFee">Home Visit Fee (per hour) * ₹</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="homeTuitionFee"
+                  placeholder="Enter hourly rate"
+                  value={formData.homeTuitionFee}
+                  onChange={(e) => handleInputChange("homeTuitionFee", e.target.value)}
+                  className="pl-10 h-12"
+                  required
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Rate for visiting student's home (includes travel)
+              </p>
             </div>
-          </div>
+          )}
+
+          {/* Tutor Home Fee - Only for tutor_home */}
+          {formData.classType === "tutor_home" && (
+            <div className="space-y-2">
+              <Label htmlFor="homeTuitionFee">Tutor Home Fee (per hour) * ₹</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="homeTuitionFee"
+                  placeholder="Enter hourly rate"
+                  value={formData.homeTuitionFee}
+                  onChange={(e) => handleInputChange("homeTuitionFee", e.target.value)}
+                  className="pl-10 h-12"
+                  required
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Rate for students coming to your place
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Demo Class</Label>

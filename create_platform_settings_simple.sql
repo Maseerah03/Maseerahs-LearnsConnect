@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
     platform_name TEXT NOT NULL DEFAULT 'LearnsConnect',
     admin_email TEXT NOT NULL DEFAULT 'admin@learnsconnect.com',
     phone_number TEXT DEFAULT '+1 (555) 123-4567',
-    footer_text TEXT DEFAULT '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.',
+    footer_text TEXT DEFAULT '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -18,7 +18,7 @@ VALUES (
     'LearnsConnect',
     'admin@learnsconnect.com',
     '+1 (555) 123-4567',
-    '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.'
+    '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.'
 )
 ON CONFLICT DO NOTHING;
 

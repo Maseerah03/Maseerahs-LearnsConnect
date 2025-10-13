@@ -39,7 +39,7 @@ export default function Settings() {
     platform_name: 'LearnsConnect',
     admin_email: 'admin@learnsconnect.com',
     phone_number: '+1 (555) 123-4567',
-    footer_text: '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.'
+    footer_text: '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.'
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -90,7 +90,7 @@ export default function Settings() {
           platform_name: settingsData.platform_name || 'LearnsConnect',
           admin_email: settingsData.admin_email || 'admin@learnsconnect.com',
           phone_number: settingsData.phone_number || '+1 (555) 123-4567',
-          footer_text: settingsData.footer_text || '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.'
+          footer_text: settingsData.footer_text || '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.'
         });
         setLastSaved(new Date(settingsData.updated_at || settingsData.created_at));
       }
@@ -233,7 +233,7 @@ export default function Settings() {
       platform_name: 'LearnsConnect',
       admin_email: 'admin@learnsconnect.com',
       phone_number: '+1 (555) 123-4567',
-      footer_text: '© 2024 LearnsConnect. All rights reserved. Empowering education through technology.'
+      footer_text: '© 2024 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved. Empowering education through technology.'
     });
     setHasChanges(true);
   };

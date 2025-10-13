@@ -1174,8 +1174,7 @@ export default function StudentDashboard() {
           const { data: allTutorsData, error: allTutorsError } = await supabase
             .from("tutor_profiles")
             .select("*")
-            .order('rating', { ascending: false })
-            .limit(6);
+            .order('rating', { ascending: false });
 
           if (allTutorsError) {
             console.error("Error loading general tutors:", allTutorsError);
@@ -1347,8 +1346,7 @@ export default function StudentDashboard() {
         try {
           const { data: fallbackTutors, error: fallbackError } = await supabase
             .from("tutor_profiles")
-            .select("*")
-            .limit(10);
+            .select("*");
             
           if (!fallbackError && fallbackTutors && fallbackTutors.length > 0) {
             console.log('Fallback tutors loaded:', fallbackTutors.length);
@@ -2642,7 +2640,7 @@ function DashboardHome({
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {tutors.slice(0, 6).map((tutor, idx) => (
+            {tutors.map((tutor, idx) => (
                           <Card key={idx} className="shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer" onClick={() => onFindTutors()}>
               <CardContent className="p-4 flex flex-col items-center text-center">
                 <Avatar className="h-12 w-12 mb-2">
@@ -2724,7 +2722,7 @@ function TutorSearch({
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [resultsPerPage] = useState(20);
+  const [resultsPerPage] = useState(100); // Show more tutors per page
   const [hasMoreResults, setHasMoreResults] = useState(true);
   
   const { toast } = useToast();
@@ -3012,6 +3010,11 @@ function TutorSearch({
       });
     }
     
+    // Debug: Log total tutors count
+    if (tutors.length > 0 && tutors.indexOf(tutor) === 0) {
+      console.log('Total tutors received:', tutors.length);
+    }
+    
     const matchesSearch = matchesKeywords(tutor, searchTerm);
     
     // Subject filter - check if tutor teaches the selected subject
@@ -3119,6 +3122,16 @@ function TutorSearch({
     }
     
     return finalResult;
+  });
+  
+  // Debug: Log filtering results
+  console.log('Filtering results:', {
+    totalTutors: tutors.length,
+    filteredTutors: filteredTutors.length,
+    searchTerm,
+    selectedSubject,
+    verifiedOnly,
+    demoAvailable
   });
 
   // Sort filtered tutors based on selected criteria
