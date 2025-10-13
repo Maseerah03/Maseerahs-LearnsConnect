@@ -24,20 +24,38 @@ export const adminLogin = async (username: string, password: string): Promise<bo
     
     // Check credentials
     if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-      // Create admin session
-      const adminSession = {
-        username: ADMIN_CREDENTIALS.username,
+      // Sign in with Supabase Auth using the admin email
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: ADMIN_CREDENTIALS.email,
-        role: 'admin',
-        loginTime: new Date().toISOString(),
-        isAuthenticated: true
-      };
+        password: ADMIN_CREDENTIALS.password
+      });
+
+      if (error) {
+        console.error('❌ Supabase Auth error:', error);
+        return false;
+      }
+
+      if (data.user) {
+        // Create admin session with Supabase user data
+        const adminSession = {
+          username: ADMIN_CREDENTIALS.username,
+          email: ADMIN_CREDENTIALS.email,
+          role: 'admin',
+          userId: data.user.id,
+          loginTime: new Date().toISOString(),
+          isAuthenticated: true
+        };
+        
+        // Store admin session
+        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(adminSession));
+        
+        console.log('✅ Admin login successful with Supabase Auth');
+        console.log('User ID:', data.user.id);
+        return true;
+      }
       
-      // Store admin session
-      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(adminSession));
-      
-      console.log('✅ Admin login successful');
-      return true;
+      console.log('❌ Admin login failed: No user data');
+      return false;
     } else {
       console.log('❌ Admin login failed: Invalid credentials');
       return false;
@@ -84,8 +102,12 @@ export const getAdminSession = () => {
 /**
  * Admin logout function
  */
-export const adminLogout = (): void => {
+export const adminLogout = async (): Promise<void> => {
   try {
+    // Sign out from Supabase Auth
+    await supabase.auth.signOut();
+    
+    // Clear localStorage
     localStorage.removeItem(ADMIN_SESSION_KEY);
     console.log('✅ Admin logged out successfully');
   } catch (error) {

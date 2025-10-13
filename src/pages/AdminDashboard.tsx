@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, LogOut, Users, GraduationCap, Building2, BookOpen, UserCheck, RefreshCw, FileText, BarChart3 } from "lucide-react";
+import { Shield, LogOut, Users, GraduationCap, Building2, BookOpen, UserCheck, RefreshCw, FileText, BarChart3, Settings } from "lucide-react";
 
 interface DashboardStats {
   totalStudents: number;
@@ -463,6 +463,15 @@ export default function AdminDashboard() {
                 <BarChart3 className="h-6 w-6 text-orange-600" />
                 <span className="text-orange-800 font-medium">Reports & Analytics</span>
                 <span className="text-xs text-orange-600">View charts and insights</span>
+              </Button>
+
+              <Button 
+                onClick={() => navigate('/admin/settings')}
+                className="h-20 flex flex-col items-center justify-center space-y-2 bg-gray-50 hover:bg-gray-100 border-gray-200"
+              >
+                <Settings className="h-6 w-6 text-gray-600" />
+                <span className="text-gray-800 font-medium">Settings</span>
+                <span className="text-xs text-gray-600">Platform configuration</span>
               </Button>
               
               <Button 
