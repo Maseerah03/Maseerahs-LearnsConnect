@@ -396,7 +396,7 @@ export default function AdminDashboard() {
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-blue-100 rounded-full">
                   <Shield className="h-8 w-8 text-blue-600" />
-                        </div>
+                </div>
                 <div>
                   <h2 className="text-xl font-bold text-blue-900 mb-1">Platform Status</h2>
                   <p className="text-blue-700">
@@ -406,8 +406,8 @@ export default function AdminDashboard() {
                       `Active platform with ${stats.totalStudents + stats.totalTutors + stats.totalInstitutions} total users`
                     )}
                   </p>
-                      </div>
-                      </div>
+                </div>
+              </div>
               <div className="text-right">
                 <div className="text-sm text-blue-600 font-medium">Last Updated</div>
                 <div className="text-sm text-blue-900">
@@ -416,11 +416,50 @@ export default function AdminDashboard() {
                     minute: '2-digit',
                     second: '2-digit'
                   })}
-                    </div>
                 </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions Card */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-medium">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Button 
+                onClick={() => navigate('/admin/users')}
+                className="h-20 flex flex-col items-center justify-center space-y-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+              >
+                <Users className="h-6 w-6 text-blue-600" />
+                <span className="text-blue-800 font-medium">Manage Users</span>
+                <span className="text-xs text-blue-600">View, suspend, delete users</span>
+              </Button>
+              
+              <Button 
+                variant="outline"
+                className="h-20 flex flex-col items-center justify-center space-y-2"
+                disabled
+              >
+                <BookOpen className="h-6 w-6 text-gray-400" />
+                <span className="text-gray-600 font-medium">Manage Courses</span>
+                <span className="text-xs text-gray-500">Coming soon</span>
+              </Button>
+              
+              <Button 
+                variant="outline"
+                className="h-20 flex flex-col items-center justify-center space-y-2"
+                disabled
+              >
+                <UserCheck className="h-6 w-6 text-gray-400" />
+                <span className="text-gray-600 font-medium">Manage Enrollments</span>
+                <span className="text-xs text-gray-500">Coming soon</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Debug Information Card */}
         <Card className="mt-6 bg-gray-50 border-gray-200">

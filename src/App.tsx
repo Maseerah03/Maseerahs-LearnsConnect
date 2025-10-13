@@ -19,6 +19,7 @@ import CoursesBatchesPage from "@/pages/CoursesBatchesPage";
 import NotFound from "@/pages/NotFound";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ManageUsers from "@/pages/ManageUsers";
 import AdminRoute from "@/components/admin/AdminRoute";
 import UserRegistration from "@/pages/UserRegistration";
 import ContentUpload from "@/pages/ContentUpload";
@@ -62,6 +63,14 @@ function App() {
           element={
             <AdminRoute>
               <AdminDashboard />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/users" 
+          element={
+            <AdminRoute>
+              <ManageUsers />
             </AdminRoute>
           } 
         />
