@@ -346,8 +346,8 @@ export default function AdminDashboard() {
                   <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
                 ) : (
                   stats.totalInstitutions.toLocaleString()
-                        )}
-                      </div>
+                          )}
+                        </div>
               <p className="text-xs text-gray-500 mt-1">Educational institutions</p>
               </CardContent>
             </Card>
@@ -387,8 +387,8 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-500 mt-1">Course enrollments</p>
               </CardContent>
             </Card>
-                        </div>
-
+                      </div>
+                      
         {/* Platform Status Card */}
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <CardContent className="p-6">
@@ -406,8 +406,8 @@ export default function AdminDashboard() {
                       `Active platform with ${stats.totalStudents + stats.totalTutors + stats.totalInstitutions} total users`
                     )}
                   </p>
-                </div>
-              </div>
+                      </div>
+                    </div>
               <div className="text-right">
                 <div className="text-sm text-blue-600 font-medium">Last Updated</div>
                 <div className="text-sm text-blue-900">
@@ -417,76 +417,76 @@ export default function AdminDashboard() {
                     second: '2-digit'
                   })}
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                        </div>
+                </div>
+              </CardContent>
+            </Card>
 
         {/* Quick Actions Card */}
         <Card className="mt-6">
-          <CardHeader>
+              <CardHeader>
             <CardTitle className="text-lg font-medium">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
+              </CardHeader>
+              <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Button 
+                            <Button
                 onClick={() => navigate('/admin/users')}
                 className="h-20 flex flex-col items-center justify-center space-y-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
-              >
+                            >
                 <Users className="h-6 w-6 text-blue-600" />
                 <span className="text-blue-800 font-medium">Manage Users</span>
                 <span className="text-xs text-blue-600">View, suspend, delete users</span>
-              </Button>
+                            </Button>
               
-              <Button 
+                          <Button
                 onClick={() => navigate('/admin/courses')}
                 className="h-20 flex flex-col items-center justify-center space-y-2 bg-green-50 hover:bg-green-100 border-green-200"
-              >
+                          >
                 <BookOpen className="h-6 w-6 text-green-600" />
                 <span className="text-green-800 font-medium">Manage Courses</span>
                 <span className="text-xs text-green-600">View, deactivate courses</span>
-              </Button>
+                          </Button>
 
-              <Button 
+                            <Button
                 onClick={() => navigate('/admin/requirements')}
                 className="h-20 flex flex-col items-center justify-center space-y-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
-              >
+                            >
                 <FileText className="h-6 w-6 text-purple-600" />
                 <span className="text-purple-800 font-medium">Manage Requirements</span>
                 <span className="text-xs text-purple-600">Approve, reject requirements</span>
-              </Button>
+                            </Button>
 
-              <Button 
+                          <Button
                 onClick={() => navigate('/admin/analytics')}
                 className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-50 hover:bg-orange-100 border-orange-200"
-              >
+                          >
                 <BarChart3 className="h-6 w-6 text-orange-600" />
                 <span className="text-orange-800 font-medium">Reports & Analytics</span>
                 <span className="text-xs text-orange-600">View charts and insights</span>
-              </Button>
+                          </Button>
 
-              <Button 
+                        <Button
                 onClick={() => navigate('/admin/settings')}
                 className="h-20 flex flex-col items-center justify-center space-y-2 bg-gray-50 hover:bg-gray-100 border-gray-200"
-              >
+                        >
                 <Settings className="h-6 w-6 text-gray-600" />
                 <span className="text-gray-800 font-medium">Settings</span>
                 <span className="text-xs text-gray-600">Platform configuration</span>
-              </Button>
+                        </Button>
               
-              <Button 
-                variant="outline"
+                  <Button
+                    variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
                 disabled
-              >
+                  >
                 <UserCheck className="h-6 w-6 text-gray-400" />
                 <span className="text-gray-600 font-medium">Manage Enrollments</span>
                 <span className="text-xs text-gray-500">Coming soon</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
+                  </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+        
       </main>
     </div>
   );

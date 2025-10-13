@@ -2645,12 +2645,12 @@ function DashboardHome({
               <CardContent className="p-4 flex flex-col items-center text-center">
                 <Avatar className="h-12 w-12 mb-2">
                   <AvatarImage 
-                    src={tutor.profile?.profile_photo_url || ""} 
-                    alt={`${tutor.profile?.full_name || "Tutor"}'s profile photo`}
+                    src={tutor.profile_photo_url || ""} 
+                    alt={`${tutor.full_name || "Tutor"}'s profile photo`}
                   />
-                  <AvatarFallback>{tutor.profile?.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{tutor.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="font-semibold text-sm">{tutor.profile?.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}</span>
+                <span className="font-semibold text-sm">{tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}</span>
                 <span className="text-muted-foreground text-xs">{tutor.teaching_mode || ""}</span>
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-3 w-3 text-yellow-500" />
@@ -2859,7 +2859,7 @@ function TutorSearch({
   const handleBookDemo = (tutor: TutorProfile) => {
     toast({
       title: "Demo Class Request",
-      description: `Demo class request sent to ${tutor.profile?.full_name || "the tutor"}. They will contact you soon!`,
+      description: `Demo class request sent to ${tutor.full_name || "the tutor"}. They will contact you soon!`,
     });
   };
 
@@ -2867,13 +2867,13 @@ function TutorSearch({
   const handleShareProfile = (tutor: TutorProfile) => {
     if (navigator.share) {
       navigator.share({
-        title: `${tutor.profile?.full_name || "Tutor"}'s Profile`,
-        text: `Check out this amazing tutor: ${tutor.profile?.full_name || "Tutor"} - ${tutor.bio || "Qualified and experienced tutor"}`,
+        title: `${tutor.full_name || "Tutor"}'s Profile`,
+        text: `Check out this amazing tutor: ${tutor.full_name || "Tutor"} - ${tutor.bio || "Qualified and experienced tutor"}`,
         url: window.location.href,
       });
     } else {
       // Fallback: copy to clipboard
-      const profileText = `${tutor.profile?.full_name || "Tutor"}'s Profile\n${tutor.bio || "Qualified and experienced tutor"}\n${window.location.href}`;
+      const profileText = `${tutor.full_name || "Tutor"}'s Profile\n${tutor.bio || "Qualified and experienced tutor"}\n${window.location.href}`;
       navigator.clipboard.writeText(profileText).then(() => {
         toast({
           title: "Profile Shared",
@@ -3815,11 +3815,11 @@ function TutorSearch({
                 <div className="flex-shrink-0 mr-6">
                   <Avatar className="h-20 w-20">
                     <AvatarImage 
-                      src={tutor.profile?.profile_photo_url || ""} 
-                      alt={`${tutor.profile?.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}'s profile photo`}
+                      src={tutor.profile_photo_url || ""} 
+                      alt={`${tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}'s profile photo`}
                     />
                     <AvatarFallback className="text-xl">
-                      {tutor.profile?.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}
+                      {tutor.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -3831,7 +3831,7 @@ function TutorSearch({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="text-lg font-semibold text-foreground break-words">
-                          {tutor.profile?.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}
+                          {tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}
                         </h3>
                         <Button
                           variant="ghost"
@@ -3982,16 +3982,16 @@ function TutorSearch({
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage 
-                        src={tutor.profile?.profile_photo_url || ""} 
-                        alt={`${tutor.profile?.full_name || "Tutor"}'s profile photo`}
+                        src={tutor.profile_photo_url || ""} 
+                        alt={`${tutor.full_name || "Tutor"}'s profile photo`}
                       />
                       <AvatarFallback>
-                        {tutor.profile?.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}
+                        {tutor.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <CardTitle className="text-lg break-words">
-                        {tutor.profile?.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}
+                        {tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-yellow-500 flex-shrink-0" />
@@ -4113,7 +4113,23 @@ function TutorSearch({
         <Dialog open={!!selectedTutorForProfile} onOpenChange={() => setSelectedTutorForProfile(null)}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Tutor Profile</DialogTitle>
+              <DialogTitle className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage 
+                    src={selectedTutorForProfile.profile_photo_url || ""} 
+                    alt={`${selectedTutorForProfile.full_name}'s profile photo`}
+                  />
+                  <AvatarFallback className="text-lg font-semibold">
+                    {selectedTutorForProfile.full_name?.split(" ").map(n => n[0]).join("") || "T"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-bold">{selectedTutorForProfile.full_name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTutorForProfile.subjects?.join(", ") || "Tutor"}
+                  </p>
+                </div>
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
               {/* Enhanced Header Section */}
@@ -4137,7 +4153,7 @@ function TutorSearch({
                     {/* Name and Qualifications */}
                     <div className="mb-4">
                       <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        {selectedTutorForProfile.profile?.full_name || "Tutor Name"}
+                        {selectedTutorForProfile.full_name || selectedTutorForProfile.profile?.full_name || "Tutor Name"}
                       </h1>
                       <div className="flex items-center gap-3 text-lg text-gray-600">
                         <span className="font-medium">
