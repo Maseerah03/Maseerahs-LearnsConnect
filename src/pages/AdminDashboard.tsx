@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, LogOut, Users, GraduationCap, Building2, BookOpen, UserCheck, RefreshCw } from "lucide-react";
+import { Shield, LogOut, Users, GraduationCap, Building2, BookOpen, UserCheck, RefreshCw, FileText } from "lucide-react";
 
 interface DashboardStats {
   totalStudents: number;
@@ -445,6 +445,15 @@ export default function AdminDashboard() {
                 <BookOpen className="h-6 w-6 text-green-600" />
                 <span className="text-green-800 font-medium">Manage Courses</span>
                 <span className="text-xs text-green-600">View, deactivate courses</span>
+              </Button>
+
+              <Button 
+                onClick={() => navigate('/admin/requirements')}
+                className="h-20 flex flex-col items-center justify-center space-y-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
+              >
+                <FileText className="h-6 w-6 text-purple-600" />
+                <span className="text-purple-800 font-medium">Manage Requirements</span>
+                <span className="text-xs text-purple-600">Approve, reject requirements</span>
               </Button>
               
               <Button 
