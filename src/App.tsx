@@ -20,6 +20,7 @@ import NotFound from "@/pages/NotFound";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ManageUsers from "@/pages/ManageUsers";
+import ManageCourses from "@/pages/ManageCourses";
 import AdminRoute from "@/components/admin/AdminRoute";
 import UserRegistration from "@/pages/UserRegistration";
 import ContentUpload from "@/pages/ContentUpload";
@@ -71,6 +72,14 @@ function App() {
           element={
             <AdminRoute>
               <ManageUsers />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/courses" 
+          element={
+            <AdminRoute>
+              <ManageCourses />
             </AdminRoute>
           } 
         />

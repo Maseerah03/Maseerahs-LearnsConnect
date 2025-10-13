@@ -439,13 +439,12 @@ export default function AdminDashboard() {
               </Button>
               
               <Button 
-                variant="outline"
-                className="h-20 flex flex-col items-center justify-center space-y-2"
-                disabled
+                onClick={() => navigate('/admin/courses')}
+                className="h-20 flex flex-col items-center justify-center space-y-2 bg-green-50 hover:bg-green-100 border-green-200"
               >
-                <BookOpen className="h-6 w-6 text-gray-400" />
-                <span className="text-gray-600 font-medium">Manage Courses</span>
-                <span className="text-xs text-gray-500">Coming soon</span>
+                <BookOpen className="h-6 w-6 text-green-600" />
+                <span className="text-green-800 font-medium">Manage Courses</span>
+                <span className="text-xs text-green-600">View, deactivate courses</span>
               </Button>
               
               <Button 
