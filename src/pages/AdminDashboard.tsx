@@ -487,25 +487,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Debug Information Card */}
-        <Card className="mt-6 bg-gray-50 border-gray-200">
-              <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">Data Sources & Debug</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>• <strong>Users:</strong> profiles table (student, tutor, institution roles)</p>
-              <p>• <strong>Courses:</strong> courses + institution_courses tables</p>
-              <p>• <strong>Enrollments:</strong> course_enrollments table</p>
-              <p>• Real-time updates active for all tables</p>
-              <p>• Check browser console for detailed statistics</p>
-              <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                <p className="text-yellow-800 font-medium">Enrollments Debug:</p>
-                <p className="text-yellow-700">If enrollments show 0, run the check_enrollments_data.sql script to see if the table has data.</p>
-                      </div>
-                      </div>
-                  </CardContent>
-                </Card>
       </main>
     </div>
   );

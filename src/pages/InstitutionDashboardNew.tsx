@@ -1744,7 +1744,7 @@ function CoursesDashboard() {
     feeSchedule: {
       type: 'fixed',
       amount: '',
-      currency: 'USD',
+      currency: 'INR',
       installments: 1
     }
   });
@@ -2420,7 +2420,7 @@ function CoursesDashboard() {
         feeSchedule: {
           type: 'fixed',
           amount: '',
-          currency: 'USD',
+          currency: 'INR',
           installments: 1
         }
       });
@@ -3142,8 +3142,8 @@ function CoursesDashboard() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
                       <SelectItem value="INR">INR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
                       <SelectItem value="EUR">EUR</SelectItem>
                     </SelectContent>
                   </Select>
