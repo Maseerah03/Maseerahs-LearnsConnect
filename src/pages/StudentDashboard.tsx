@@ -2644,25 +2644,25 @@ function DashboardHome({
               <Card key={idx} className="shadow-soft hover:shadow-medium hover:-translate-y-1 transition-all duration-300 cursor-pointer group" onClick={() => onFindTutors()}>
                 <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
                   <Avatar className="h-12 w-12 mb-1 border-2 border-primary/20 group-hover:border-primary/40 transition-colors">
-                    <AvatarImage 
-                      src={tutor.profile_photo_url || ""} 
-                      alt={`${tutor.full_name || "Tutor"}'s profile photo`}
-                    />
+                  <AvatarImage 
+                    src={tutor.profile_photo_url || ""} 
+                    alt={`${tutor.full_name || "Tutor"}'s profile photo`}
+                  />
                     <AvatarFallback className="text-sm font-semibold">{tutor.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                </Avatar>
                   <div className="space-y-1 w-full">
                     <h4 className="font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">
                       {tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}
                     </h4>
                     <p className="text-muted-foreground text-xs line-clamp-1">{tutor.teaching_mode || "Online & Offline"}</p>
                     <div className="flex items-center justify-center gap-1">
-                      <Star className="h-3 w-3 text-yellow-500" />
-                      <span className="text-xs font-bold">{tutor.rating || 0}</span>
-                    </div>
+                  <Star className="h-3 w-3 text-yellow-500" />
+                  <span className="text-xs font-bold">{tutor.rating || 0}</span>
+                </div>
                     <p className="text-xs text-muted-foreground font-medium">₹{tutor.hourly_rate_min || 0}/hr</p>
                   </div>
-                </CardContent>
-              </Card>
+              </CardContent>
+            </Card>
             ))}
           </div>
         </section>
@@ -3327,6 +3327,68 @@ function TutorSearch({
           title: "Already Interested",
           description: "You have already shown interest in this tutor.",
           variant: "default",
+        });
+        return;
+      }
+
+      // Check if this is a dummy profile (UUIDs from all 5 batches of dummy data)
+      const isDummyProfile = tutor.user_id.startsWith('b1111111-1111-1111-1111-111111111111') ||
+                            tutor.user_id.startsWith('b2222222-2222-2222-2222-222222222222') ||
+                            tutor.user_id.startsWith('b3333333-3333-3333-3333-333333333333') ||
+                            tutor.user_id.startsWith('b4444444-4444-4444-4444-444444444444') ||
+                            tutor.user_id.startsWith('b5555555-5555-5555-5555-555555555555') ||
+                            tutor.user_id.startsWith('b6666666-6666-6666-6666-666666666666') ||
+                            tutor.user_id.startsWith('b7777777-7777-7777-7777-777777777777') ||
+                            tutor.user_id.startsWith('b8888888-8888-8888-8888-888888888888') ||
+                            tutor.user_id.startsWith('b9999999-9999-9999-9999-999999999999') ||
+                            tutor.user_id.startsWith('baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') ||
+                            tutor.user_id.startsWith('c1111111-1111-1111-1111-111111111111') ||
+                            tutor.user_id.startsWith('c2222222-2222-2222-2222-222222222222') ||
+                            tutor.user_id.startsWith('c3333333-3333-3333-3333-333333333333') ||
+                            tutor.user_id.startsWith('c4444444-4444-4444-4444-444444444444') ||
+                            tutor.user_id.startsWith('c5555555-5555-5555-5555-555555555555') ||
+                            tutor.user_id.startsWith('c6666666-6666-6666-6666-666666666666') ||
+                            tutor.user_id.startsWith('c7777777-7777-7777-7777-777777777777') ||
+                            tutor.user_id.startsWith('c8888888-8888-8888-8888-888888888888') ||
+                            tutor.user_id.startsWith('c9999999-9999-9999-9999-999999999999') ||
+                            tutor.user_id.startsWith('caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') ||
+                            tutor.user_id.startsWith('d1111111-1111-1111-1111-111111111111') ||
+                            tutor.user_id.startsWith('d2222222-2222-2222-2222-222222222222') ||
+                            tutor.user_id.startsWith('d3333333-3333-3333-3333-333333333333') ||
+                            tutor.user_id.startsWith('d4444444-4444-4444-4444-444444444444') ||
+                            tutor.user_id.startsWith('d5555555-5555-5555-5555-555555555555') ||
+                            tutor.user_id.startsWith('d6666666-6666-6666-6666-666666666666') ||
+                            tutor.user_id.startsWith('d7777777-7777-7777-7777-777777777777') ||
+                            tutor.user_id.startsWith('d8888888-8888-8888-8888-888888888888') ||
+                            tutor.user_id.startsWith('d9999999-9999-9999-9999-999999999999') ||
+                            tutor.user_id.startsWith('daaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') ||
+                            tutor.user_id.startsWith('e1111111-1111-1111-1111-111111111111') ||
+                            tutor.user_id.startsWith('e2222222-2222-2222-2222-222222222222') ||
+                            tutor.user_id.startsWith('e3333333-3333-3333-3333-333333333333') ||
+                            tutor.user_id.startsWith('e4444444-4444-4444-4444-444444444444') ||
+                            tutor.user_id.startsWith('e5555555-5555-5555-5555-555555555555') ||
+                            tutor.user_id.startsWith('e6666666-6666-6666-6666-666666666666') ||
+                            tutor.user_id.startsWith('e7777777-7777-7777-7777-777777777777') ||
+                            tutor.user_id.startsWith('e8888888-8888-8888-8888-888888888888') ||
+                            tutor.user_id.startsWith('e9999999-9999-9999-9999-999999999999') ||
+                            tutor.user_id.startsWith('eaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') ||
+                            tutor.user_id.startsWith('f1111111-1111-1111-1111-111111111111') ||
+                            tutor.user_id.startsWith('f2222222-2222-2222-2222-222222222222') ||
+                            tutor.user_id.startsWith('f3333333-3333-3333-3333-333333333333') ||
+                            tutor.user_id.startsWith('f4444444-4444-4444-4444-444444444444') ||
+                            tutor.user_id.startsWith('f5555555-5555-5555-5555-555555555555') ||
+                            tutor.user_id.startsWith('f6666666-6666-6666-6666-666666666666') ||
+                            tutor.user_id.startsWith('f7777777-7777-7777-7777-777777777777') ||
+                            tutor.user_id.startsWith('f8888888-8888-8888-8888-888888888888') ||
+                            tutor.user_id.startsWith('f9999999-9999-9999-9999-999999999999') ||
+                            tutor.user_id.startsWith('faaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+
+      // For dummy profiles, just show success message and update local state
+      if (isDummyProfile) {
+        setInterestedTutors(prev => new Set([...prev, tutor.user_id]));
+        toast({
+          title: "Interest Recorded!",
+          description: "Your interest has been noted. This is a demo profile.",
         });
         return;
       }
