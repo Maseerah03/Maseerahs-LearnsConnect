@@ -2627,8 +2627,8 @@ function DashboardHome({
 
       {/* Recommended Tutors */}
       {tutors.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-4">
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-semibold">Recommended Tutors</h3>
               <p className="text-sm text-muted-foreground mt-1">
@@ -2639,34 +2639,38 @@ function DashboardHome({
               View All <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {tutors.map((tutor, idx) => (
-                          <Card key={idx} className="shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer" onClick={() => onFindTutors()}>
-              <CardContent className="p-4 flex flex-col items-center text-center">
-                <Avatar className="h-12 w-12 mb-2">
-                  <AvatarImage 
-                    src={tutor.profile_photo_url || ""} 
-                    alt={`${tutor.full_name || "Tutor"}'s profile photo`}
-                  />
-                  <AvatarFallback>{tutor.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="font-semibold text-sm">{tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}</span>
-                <span className="text-muted-foreground text-xs">{tutor.teaching_mode || ""}</span>
-                <div className="flex items-center gap-1 mt-1">
-                  <Star className="h-3 w-3 text-yellow-500" />
-                  <span className="text-xs font-bold">{tutor.rating || 0}</span>
-                </div>
-                <span className="text-xs text-muted-foreground mt-1">₹{tutor.hourly_rate_min || 0}/hr</span>
-              </CardContent>
-            </Card>
+              <Card key={idx} className="shadow-soft hover:shadow-medium hover:-translate-y-1 transition-all duration-300 cursor-pointer group" onClick={() => onFindTutors()}>
+                <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
+                  <Avatar className="h-12 w-12 mb-1 border-2 border-primary/20 group-hover:border-primary/40 transition-colors">
+                    <AvatarImage 
+                      src={tutor.profile_photo_url || ""} 
+                      alt={`${tutor.full_name || "Tutor"}'s profile photo`}
+                    />
+                    <AvatarFallback className="text-sm font-semibold">{tutor.full_name?.split(" ").map(n => n[0]).join("") || tutor.user_id.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1 w-full">
+                    <h4 className="font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">
+                      {tutor.full_name || `Tutor ${tutor.user_id.slice(0, 8)}`}
+                    </h4>
+                    <p className="text-muted-foreground text-xs line-clamp-1">{tutor.teaching_mode || "Online & Offline"}</p>
+                    <div className="flex items-center justify-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-500" />
+                      <span className="text-xs font-bold">{tutor.rating || 0}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-medium">₹{tutor.hourly_rate_min || 0}/hr</p>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>
       )}
 
                 {/* Available Courses */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-semibold">Available Courses</h3>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -2682,7 +2686,121 @@ function DashboardHome({
               </Button>
             </div>
 
-        
+            {/* Course Preview Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* Sample Course Cards */}
+              <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer" onClick={() => setState(prev => ({ ...prev, activeTab: "courses" }))}>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                          Mathematics Fundamentals
+                        </h4>
+                        <div className="flex items-center gap-1 mt-2">
+                          <Badge variant="outline" className="text-xs">Math</Badge>
+                          <Badge variant="secondary" className="text-xs">Beginner</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      Master the basics of algebra, geometry, and arithmetic
+                    </p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">₹500/course</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        <span className="font-medium">4.8</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer" onClick={() => setState(prev => ({ ...prev, activeTab: "courses" }))}>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                          English Literature
+                        </h4>
+                        <div className="flex items-center gap-1 mt-2">
+                          <Badge variant="outline" className="text-xs">English</Badge>
+                          <Badge variant="secondary" className="text-xs">Intermediate</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      Explore classic and contemporary literature
+                    </p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">₹750/course</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        <span className="font-medium">4.9</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer" onClick={() => setState(prev => ({ ...prev, activeTab: "courses" }))}>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                          Science & Technology
+                        </h4>
+                        <div className="flex items-center gap-1 mt-2">
+                          <Badge variant="outline" className="text-xs">Science</Badge>
+                          <Badge variant="secondary" className="text-xs">Advanced</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      Dive deep into physics, chemistry, and biology
+                    </p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">₹1000/course</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        <span className="font-medium">4.7</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer" onClick={() => setState(prev => ({ ...prev, activeTab: "courses" }))}>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                          Computer Programming
+                        </h4>
+                        <div className="flex items-center gap-1 mt-2">
+                          <Badge variant="outline" className="text-xs">Programming</Badge>
+                          <Badge variant="secondary" className="text-xs">Beginner</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      Learn Python, JavaScript, and web development
+                    </p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">₹1200/course</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        <span className="font-medium">4.9</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
       </section>
 
     </div>
@@ -2726,6 +2844,7 @@ function TutorSearch({
   const [hasMoreResults, setHasMoreResults] = useState(true);
   
   const { toast } = useToast();
+
 
   // Use the exact same subject categories as defined in ProfileEditDialog
   const subjectCategories = {

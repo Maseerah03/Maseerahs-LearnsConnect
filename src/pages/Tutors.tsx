@@ -104,8 +104,8 @@ export default function Tutors() {
   };
 
   const getPriceRange = (min: number, max: number) => {
-    if (min === max) return `$${min}/hr`;
-    return `$${min}-${max}/hr`;
+    if (min === max) return `₹${min}/hr`;
+    return `₹${min}-${max}/hr`;
   };
 
   const getSubjects = (tutor: TutorProfile) => {

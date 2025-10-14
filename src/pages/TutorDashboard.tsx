@@ -1499,7 +1499,6 @@ function DashboardHome({
               try {
                 // Extract student ID from notification data
                 const studentId = notification.data?.student_id || notification.data?.sender_id;
-                if (!studentId) return notification;
 
                 // Fetch student profile information
                 const { data: studentProfile } = await supabase
