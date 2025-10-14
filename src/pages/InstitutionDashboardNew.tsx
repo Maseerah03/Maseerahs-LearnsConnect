@@ -82,6 +82,7 @@ interface DashboardState {
   selectedStudent: any;
   refreshTrigger: number;
   showEditProfileDialog: boolean;
+  isMobileMenuOpen: boolean;
 }
 
 // Global helper function to get current user ID safely
@@ -189,6 +190,7 @@ export default function InstitutionDashboard() {
     selectedStudent: null,
     refreshTrigger: 0,
     showEditProfileDialog: false,
+    isMobileMenuOpen: false,
   });
   
   // Show loading while user is being initialized
@@ -327,6 +329,74 @@ export default function InstitutionDashboard() {
   return (
     <div className="min-h-screen bg-gradient-subtle flex flex-col">
       <SidebarProvider>
+        {/* Mobile Header with Hamburger Menu */}
+        <div className="md:hidden bg-white border-b shadow-sm">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 rounded-lg overflow-hidden shadow-soft">
+                <img 
+                  src="/logo.jpg" 
+                  alt="LearnsConnect Logo" 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-primary">LearnsConnect</h1>
+                <p className="text-xs text-muted-foreground">
+                  {registrationData?.name || profile?.organization_name || "Institution Dashboard"}
+                </p>
+              </div>
+            </div>
+            <button
+              className="p-2 rounded-lg hover:bg-muted transition-colors touch-manipulation"
+              onClick={() => setState(prev => ({ ...prev, isMobileMenuOpen: !prev.isMobileMenuOpen }))}
+              aria-label="Toggle mobile menu"
+            >
+              {state.isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+          
+          {/* Mobile Menu */}
+          {state.isMobileMenuOpen && (
+            <div className="border-t bg-background/95 backdrop-blur-sm">
+              <nav className="flex flex-col space-y-1 p-2">
+                {navMenu.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setState(prev => ({ 
+                        ...prev, 
+                        activeTab: item.id,
+                        isMobileMenuOpen: false 
+                      }));
+                    }}
+                    className={`flex items-center gap-3 text-sm font-medium transition-colors px-3 py-3 rounded-lg touch-manipulation ${
+                      state.activeTab === item.id
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                    }`}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 text-sm font-medium text-destructive hover:text-destructive px-3 py-3 rounded-lg touch-manipulation hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </nav>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-1">
           {/* Sidebar Navigation */}
           <Sidebar className="bg-sidebar border-r">
