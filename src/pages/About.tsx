@@ -75,16 +75,16 @@ export default function About() {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-20 pb-16">
+      <section className="pt-16 sm:pt-20 pb-12 sm:pb-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+          <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               About
               <span className="bg-gradient-to-r from-blue-500 to-white bg-clip-text text-transparent">
                 {" "}LearnsConnect
               </span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Revolutionizing education through technology, connecting passionate learners with expert educators worldwide
             </p>
           </div>
@@ -92,39 +92,39 @@ export default function About() {
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-20">
+      <section className="py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+            <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-subtle rounded-full flex items-center justify-center">
-                  <Target className="h-6 w-6 text-primary" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-subtle rounded-full flex items-center justify-center">
+                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <h2 className="text-3xl font-bold">Our Mission</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">Our Mission</h2>
               </div>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
                 To democratize quality education by creating a seamless platform that connects students, tutors, and institutions. 
                 We believe that every individual, regardless of their location or background, should have access to personalized 
                 learning experiences that unlock their full potential.
               </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
                 Through innovative technology and a commitment to excellence, we're building bridges between knowledge seekers 
                 and knowledge providers, making education more accessible, engaging, and effective than ever before.
               </p>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-subtle rounded-full flex items-center justify-center">
-                  <Lightbulb className="h-6 w-6 text-primary" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-subtle rounded-full flex items-center justify-center">
+                  <Lightbulb className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <h2 className="text-3xl font-bold">Our Vision</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">Our Vision</h2>
               </div>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
                 To become the world's leading educational platform, where learning knows no boundaries. We envision a future 
                 where quality education is accessible to everyone, everywhere, at any time.
               </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
                 By fostering meaningful connections between learners and educators, we're creating a global community 
                 that celebrates knowledge sharing, continuous growth, and lifelong learning.
               </p>
@@ -134,28 +134,28 @@ export default function About() {
       </section>
 
       {/* Core Values */}
-      <section className="py-20 bg-background">
+      <section className="py-12 sm:py-16 lg:py-20 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
               Our Core Values
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               The principles that guide everything we do at LearnsConnect
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {values.map((value, index) => (
               <Card key={index} className="border-none shadow-soft hover:shadow-medium transition-all duration-300 text-center">
-                <CardContent className="p-8">
-                  <div className="w-16 h-16 bg-gradient-subtle rounded-full flex items-center justify-center mx-auto mb-6">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-subtle rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                     <div className="text-primary">
                       {value.icon}
                     </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-4">{value.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{value.description}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">{value.title}</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{value.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -279,32 +279,32 @@ export default function About() {
       </section>
 
       {/* Call to Action */}
-      <section className="py-20 bg-gradient-hero text-primary-foreground">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-hero text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold">
+          <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
               Join Our Educational Revolution
             </h2>
-            <p className="text-xl opacity-90">
+            <p className="text-base sm:text-lg md:text-xl opacity-90">
               Be part of the future of education. Whether you're a student, tutor, or institution, 
               we're here to support your educational journey.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Link to="/signup-choice">
                 <Button 
                   size="lg" 
                   variant="secondary"
-                  className="bg-background text-foreground hover:bg-background/90 shadow-medium text-lg px-8 py-3 h-auto"
+                  className="bg-background text-foreground hover:bg-background/90 shadow-medium text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto w-full sm:w-auto"
                 >
                   Get Started Today
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
               <Link to="/how-it-works">
                 <Button 
                   size="lg" 
                   variant="outline"
-                  className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-all duration-300 text-lg px-8 py-3 h-auto"
+                  className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto w-full sm:w-auto"
                 >
                   Learn More
                 </Button>

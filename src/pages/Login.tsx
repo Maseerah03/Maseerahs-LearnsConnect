@@ -478,27 +478,27 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
       
-      <div className="container mx-auto px-4 py-20">
+      <div className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
         <div className="max-w-md mx-auto">
           <Link 
             to="/" 
-            className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8"
+            className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-6 sm:mb-8 text-sm sm:text-base"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Link>
 
           <Card className="shadow-medium border-none">
-            <CardHeader className="space-y-4 text-center">
-              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-              <CardDescription className="text-base">
+            <CardHeader className="space-y-3 sm:space-y-4 text-center px-4 sm:px-6 pt-6 sm:pt-8">
+              <CardTitle className="text-xl sm:text-2xl font-bold">Welcome Back</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
                 Sign in to your LearnsConnect account to continue your learning journey
               </CardDescription>
             </CardHeader>
 
             <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
+              <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Account Selection Dropdown */}
                   {savedEmails.length > 0 && (
                     <div className="space-y-2">
@@ -506,7 +506,7 @@ export default function Login() {
                         Choose Saved Account
                       </Label>
                       <Select value={selectedSavedEmail} onValueChange={handleAccountSelection}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-11 sm:h-12">
                           <SelectValue placeholder="Select an account or add new" />
                         </SelectTrigger>
                         <SelectContent>
@@ -535,7 +535,7 @@ export default function Login() {
                       placeholder="your@email.com"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="pl-10 h-12"
+                      className="pl-10 h-11 sm:h-12 text-sm sm:text-base"
                       required
                     />
                   </div>
@@ -558,13 +558,13 @@ export default function Login() {
                       placeholder="Enter your password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="pl-10 pr-10 h-12"
+                      className="pl-10 pr-10 h-11 sm:h-12 text-sm sm:text-base"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -720,11 +720,11 @@ export default function Login() {
                 )}
               </CardContent>
 
-              <CardFooter className="flex flex-col space-y-4">
+              <CardFooter className="flex flex-col space-y-3 sm:space-y-4 px-4 sm:px-6 pb-6 sm:pb-8">
                 <Button 
                   type="submit" 
                   disabled={isLoading}
-                  className="w-full bg-gradient-primary shadow-soft hover:shadow-medium h-12 text-base"
+                  className="w-full bg-gradient-primary shadow-soft hover:shadow-medium h-11 sm:h-12 text-sm sm:text-base"
                 >
                   {isLoading ? (
                     <>
@@ -748,9 +748,9 @@ export default function Login() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="w-full h-12 text-base border-border hover:bg-muted"
+                  className="w-full h-11 sm:h-12 text-sm sm:text-base border-border hover:bg-muted"
                 >
-                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -759,7 +759,7 @@ export default function Login() {
                   Continue with Google
                 </Button>
 
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-xs sm:text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <Link to="/signup" className="text-primary hover:text-primary-soft font-medium transition-colors">
                     Sign up here
@@ -769,7 +769,7 @@ export default function Login() {
             </form>
           </Card>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 sm:mt-8 text-center">
             <p className="text-xs text-muted-foreground">
               By signing in, you agree to our{" "}
               <Link to="/terms" className="text-primary hover:text-primary-soft">Terms of Service</Link>

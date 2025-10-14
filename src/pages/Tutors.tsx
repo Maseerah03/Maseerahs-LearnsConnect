@@ -158,31 +158,31 @@ export default function Tutors() {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-20 pb-16">
+      <section className="pt-16 sm:pt-20 pb-12 sm:pb-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+          <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               Find Your Perfect
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 {" "}Tutor
               </span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Connect with verified, experienced tutors who are passionate about helping you succeed
             </p>
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Users className="h-5 w-5" />
-              <span>{tutors.length} verified tutors available</span>
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm sm:text-base">{tutors.length} verified tutors available</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* Search and Filter Section */}
-      <section className="py-8 bg-background/50">
+      <section className="py-6 sm:py-8 bg-background/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
               {/* Search Input */}
               <div className="flex-1 w-full">
                 <div className="relative">
@@ -191,15 +191,15 @@ export default function Tutors() {
                     placeholder="Search tutors by name, subject, or expertise..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12"
+                    className="pl-10 h-11 sm:h-12 text-sm sm:text-base"
                   />
                 </div>
               </div>
               
               {/* Subject Filter */}
-              <div className="w-full md:w-48">
+              <div className="w-full sm:w-48">
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger className="h-11 sm:h-12">
                     <SelectValue placeholder="All Subjects" />
                   </SelectTrigger>
                   <SelectContent>
@@ -220,8 +220,8 @@ export default function Tutors() {
             </div>
             
             {/* Search Results Info */}
-            <div className="mt-4 text-center">
-              <p className="text-muted-foreground">
+            <div className="mt-3 sm:mt-4 text-center">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 {searchTerm || selectedSubject !== "all" ? (
                   <>Showing {filteredTutors.length} of {tutors.length} tutors</>
                 ) : (
@@ -253,54 +253,54 @@ export default function Tutors() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {currentTutors.map((tutor) => (
                 <Card key={tutor.id} className="group hover:shadow-medium hover:-translate-y-1 transition-all duration-300 border-0 bg-gradient-to-br from-background/90 to-background/70 backdrop-blur-sm">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     {/* Tutor Header */}
-                    <div className="flex items-start gap-4 mb-4">
-                      <Avatar className="h-16 w-16 border-2 border-primary/20">
-                        <AvatarFallback className="bg-gradient-subtle text-primary font-semibold text-lg">
+                    <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-primary/20">
+                        <AvatarFallback className="bg-gradient-subtle text-primary font-semibold text-sm sm:text-lg">
                           {tutor.profile.full_name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors">
                           {tutor.profile.full_name}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <BookOpen className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-1">
+                          <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span className="truncate">{getSubjects(tutor)}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span>{tutor.profile.city}, {tutor.profile.area}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Bio */}
-                    <p className="text-muted-foreground text-sm mb-4 leading-relaxed line-clamp-3">
+                    <p className="text-muted-foreground text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed line-clamp-3">
                       {tutor.bio || 'Passionate educator dedicated to student success'}
                     </p>
 
                     {/* Stats Row */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">4.8</span>
+                        <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-xs sm:text-sm font-medium">4.8</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                         <span>{tutor.experience_years}+ years</span>
                         <span>•</span>
-                        <span className="text-sm font-medium text-primary">
+                        <span className="text-xs sm:text-sm font-medium text-primary">
                           {getPriceRange(tutor.hourly_rate_min, tutor.hourly_rate_max)}
                         </span>
                       </div>
                     </div>
 
                     {/* Teaching Mode */}
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
                       <Badge variant="outline" className="text-xs">
                         {tutor.teaching_mode || 'Online'}
                       </Badge>
@@ -316,7 +316,7 @@ export default function Tutors() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="w-full border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                        className="w-full border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-xs sm:text-sm py-2 sm:py-2.5"
                       >
                         View Profile
                       </Button>
@@ -328,12 +328,13 @@ export default function Tutors() {
               
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
+                <div className="flex justify-center items-center gap-1 sm:gap-2 mt-6 sm:mt-8">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
+                    className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                   >
                     Previous
                   </Button>
@@ -345,7 +346,7 @@ export default function Tutors() {
                         variant={currentPage === page ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(page)}
-                        className="w-10 h-10"
+                        className="w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-sm"
                       >
                         {page}
                       </Button>
@@ -357,6 +358,7 @@ export default function Tutors() {
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
+                    className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                   >
                     Next
                   </Button>
@@ -364,8 +366,8 @@ export default function Tutors() {
               )}
               
               {/* Page Info */}
-              <div className="text-center mt-4 text-muted-foreground">
-                <p>
+              <div className="text-center mt-3 sm:mt-4 text-muted-foreground">
+                <p className="text-xs sm:text-sm">
                   Showing {startIndex + 1}-{Math.min(endIndex, filteredTutors.length)} of {filteredTutors.length} tutors
                   {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
                 </p>
@@ -376,13 +378,13 @@ export default function Tutors() {
       </section>
 
       {/* All Tutors Section */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-12 sm:py-16 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
               Browse All Available Tutors
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Explore our complete directory of verified tutors across all subjects and locations
             </p>
           </div>
@@ -482,30 +484,30 @@ export default function Tutors() {
       </section>
 
       {/* Signup CTA */}
-      <section className="py-16 text-center">
+      <section className="py-12 sm:py-16 text-center">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold">
+          <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
               Ready to Find Your Perfect Tutor?
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
               Sign up now to access complete tutor profiles, book sessions, and start your learning journey.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Link to="/signup-choice">
                 <Button 
                   size="lg"
-                  className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-medium text-lg px-8 py-3 h-auto"
+                  className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-medium text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto w-full sm:w-auto"
                 >
                   Sign Up Now
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
               <Link to="/login">
                 <Button 
                   variant="outline"
                   size="lg"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 text-lg px-8 py-3 h-auto"
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto w-full sm:w-auto"
                 >
                   Already have an account? Log in
                 </Button>

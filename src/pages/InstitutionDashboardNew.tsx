@@ -280,7 +280,7 @@ export default function InstitutionDashboard() {
           </div>
               </SidebarContent>
             </Sidebar>
-            <main className="flex-1 p-6 md:p-10 bg-background overflow-y-auto">
+            <main className="flex-1 p-4 sm:p-6 md:p-10 bg-background overflow-y-auto">
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
@@ -307,7 +307,7 @@ export default function InstitutionDashboard() {
           </div>
               </SidebarContent>
             </Sidebar>
-            <main className="flex-1 p-6 md:p-10 bg-background overflow-y-auto">
+            <main className="flex-1 p-4 sm:p-6 md:p-10 bg-background overflow-y-auto">
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                   <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-500" />
@@ -331,9 +331,9 @@ export default function InstitutionDashboard() {
           {/* Sidebar Navigation */}
           <Sidebar className="bg-sidebar border-r">
             <SidebarContent>
-              <div className="p-4 border-b">
-                <h2 className="text-lg font-bold text-primary">LearnsConnect</h2>
-                <p className="text-sm text-muted-foreground">
+              <div className="p-3 sm:p-4 border-b">
+                <h2 className="text-base sm:text-lg font-bold text-primary">LearnsConnect</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {registrationData?.name || profile?.organization_name || "Institution Dashboard"}
                 </p>
         </div>
@@ -343,12 +343,13 @@ export default function InstitutionDashboard() {
                     <SidebarMenuButton 
                       isActive={state.activeTab === item.id}
                       onClick={() => setState(prev => ({ ...prev, activeTab: item.id }))}
-                      className="flex items-center gap-3"
+                      className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
                     >
                       {item.icon}
-                      <span>{item.label}</span>
+                      <span className="hidden sm:inline">{item.label}</span>
+                      <span className="sm:hidden">{item.label.split(' ')[0]}</span>
                       {item.badge && (
-                        <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                        <SidebarMenuBadge className="text-xs">{item.badge}</SidebarMenuBadge>
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -367,7 +368,7 @@ export default function InstitutionDashboard() {
           </Sidebar>
 
           {/* Main Dashboard Content */}
-          <main className="flex-1 p-6 md:p-10 bg-background overflow-y-auto">
+          <main className="flex-1 p-4 sm:p-6 md:p-10 bg-background overflow-y-auto">
             {/* Real-time Status Header */}
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
