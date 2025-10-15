@@ -53,7 +53,7 @@ export const Header = () => {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
-            <Link to="/signup-choice">
+            <Link to="/login">
               <Button variant="ghost" size="sm" className="text-sm">
                 Sign In
               </Button>
@@ -96,7 +96,7 @@ export const Header = () => {
               ))}
 
               <div className="flex flex-col space-y-2 pt-4 border-t">
-                <Link to="/signup-choice" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full justify-start text-sm py-3">
                     Sign In
                   </Button>

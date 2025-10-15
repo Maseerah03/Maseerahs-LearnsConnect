@@ -6375,7 +6375,7 @@ function ProfileEditDialog({
                 )}
               </div>
               <div>
-                <Label htmlFor="primary_language">Primary Language</Label>
+                <Label htmlFor="primary_language">Medium of Instruction</Label>
                 <select
                   id="primary_language"
                   value={formData.primary_language || ''}

@@ -40,7 +40,7 @@ export const step1Schema = z.object({
     .min(2, "Area is required"),
   
   primaryLanguage: z.string()
-    .min(1, "Primary language is required"),
+    .min(1, "Medium of instruction is required"),
     
   termsAccepted: z.boolean()
     .refine(val => val === true, "You must accept the terms and conditions")

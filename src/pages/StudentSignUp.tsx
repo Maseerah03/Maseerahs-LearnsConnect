@@ -411,10 +411,10 @@ export default function StudentSignUp() {
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Primary Language *</Label>
+                    <Label>Medium of Instruction *</Label>
                     <Select value={formData.primaryLanguage} onValueChange={(value) => handleInputChange("primaryLanguage", value)}>
                       <SelectTrigger className="h-12">
-                        <SelectValue placeholder="Select your primary language" />
+                        <SelectValue placeholder="Select your medium of instruction" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="english">English</SelectItem>
