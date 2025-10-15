@@ -300,13 +300,13 @@ export default function About() {
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
-              <Link to="/how-it-works">
+              <Link to="/privacy-policy">
                 <Button 
                   size="lg" 
                   variant="outline"
                   className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto w-full sm:w-auto"
                 >
-                  Learn More
+                  Privacy Policy
                 </Button>
               </Link>
             </div>

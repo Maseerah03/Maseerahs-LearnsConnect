@@ -15,9 +15,19 @@ export default function SignUpChoice() {
             <h1 className="text-4xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
               Join LearnsConnect
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-muted-foreground mb-4">
               Choose how you'd like to be part of our learning community
             </p>
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2 text-green-800 text-sm font-medium">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Sign-up is free for Students, Tutors, and Institutions.
+              </div>
+              <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-blue-800 text-sm font-medium">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                First 10 leads are free! Tutors: ₹9/lead, Institutions: ₹19/lead
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -51,7 +61,7 @@ export default function SignUpChoice() {
                 
                 <Link to="/student-signup" className="block">
                   <Button className="w-full h-12 text-lg font-semibold mt-6">
-                    Sign Up as Student
+                    Start Learning
                   </Button>
                 </Link>
               </CardContent>
@@ -87,7 +97,7 @@ export default function SignUpChoice() {
                 
                 <Link to="/tutor-signup" className="block">
                   <Button className="w-full h-12 text-lg font-semibold mt-6">
-                    Sign Up as Tutor
+                    Start Earning
                   </Button>
                 </Link>
               </CardContent>
@@ -123,7 +133,7 @@ export default function SignUpChoice() {
                 
                 <Link to="/institution-signup" className="block">
                   <Button className="w-full h-12 text-lg font-semibold mt-6">
-                    Sign Up as Institution
+                    Start Branding
                   </Button>
                 </Link>
               </CardContent>

@@ -10,6 +10,7 @@ export const Header = () => {
   const navigation = [
     { name: "Find Tutors", href: "/tutors" },
     { name: "Institutions", href: "/institutions" },
+    { name: "Pricing", href: "/pricing" },
     { name: "How it Works", href: "/how-it-works" },
     { name: "About", href: "/about" },
   ];

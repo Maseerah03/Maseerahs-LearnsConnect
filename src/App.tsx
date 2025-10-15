@@ -36,6 +36,7 @@ import Tutors from '@/pages/Tutors';
 import Institutions from '@/pages/Institutions';
 import HowItWorks from '@/pages/HowItWorks';
 import About from '@/pages/About';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -120,6 +121,7 @@ function App() {
         <Route path="/institutions" element={<Institutions />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/about" element={<About />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />

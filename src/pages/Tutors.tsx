@@ -34,7 +34,10 @@ export default function Tutors() {
   const [tutors, setTutors] = useState<TutorProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("all");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedModes, setSelectedModes] = useState<string[]>([]);
+  const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
+  const [selectedRadius, setSelectedRadius] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const tutorsPerPage = 10;
 
@@ -115,17 +118,42 @@ export default function Tutors() {
     return 'General Tutoring';
   };
 
-  // Filter tutors based on search and subject
+  // Filter tutors based on search and multiple filters
   const filteredTutors = tutors.filter(tutor => {
     const matchesSearch = searchTerm === "" || 
       tutor.profile.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tutor.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       getSubjects(tutor).toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSubject = selectedSubject === "all" || 
-      getSubjects(tutor).toLowerCase().includes(selectedSubject.toLowerCase());
+    // Check subjects filter
+    const matchesSubjects = selectedSubjects.length === 0 || 
+      selectedSubjects.some(subject => 
+        getSubjects(tutor).toLowerCase().includes(subject.toLowerCase())
+      );
     
-    return matchesSearch && matchesSubject;
+    // Check mode filter (online/offline)
+    const matchesModes = selectedModes.length === 0 || 
+      selectedModes.some(mode => {
+        const tutorMode = tutor.teaching_mode?.toLowerCase() || '';
+        return mode.toLowerCase() === 'online' ? tutorMode.includes('online') : tutorMode.includes('offline');
+      });
+    
+    // Check gender filter (assuming we have gender in profile)
+    const matchesGenders = selectedGenders.length === 0 || 
+      selectedGenders.some(gender => {
+        // This would need to be implemented based on your data structure
+        // For now, we'll assume it's available in the profile
+        return true; // Placeholder - implement based on actual data structure
+      });
+    
+    // Check radius filter (this would need location-based filtering)
+    const matchesRadius = selectedRadius.length === 0 || 
+      selectedRadius.some(radius => {
+        // This would need to be implemented with actual location data
+        return true; // Placeholder - implement based on actual location data
+      });
+    
+    return matchesSearch && matchesSubjects && matchesModes && matchesGenders && matchesRadius;
   });
 
   // Pagination logic
@@ -137,7 +165,7 @@ export default function Tutors() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedSubject]);
+  }, [searchTerm, selectedSubjects, selectedModes, selectedGenders, selectedRadius]);
 
   if (loading) {
     return (
@@ -170,10 +198,11 @@ export default function Tutors() {
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Connect with verified, experienced tutors who are passionate about helping you succeed
             </p>
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            {/* Temporarily disabled - Tutor count display */}
+            {/* <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <Users className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">{tutors.length} verified tutors available</span>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -181,48 +210,206 @@ export default function Tutors() {
       {/* Search and Filter Section */}
       <section className="py-6 sm:py-8 bg-background/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
-              {/* Search Input */}
-              <div className="flex-1 w-full">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search tutors by name, subject, or expertise..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-11 sm:h-12 text-sm sm:text-base"
-                  />
-                </div>
-              </div>
-              
-              {/* Subject Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="h-11 sm:h-12">
-                    <SelectValue placeholder="All Subjects" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Subjects</SelectItem>
-                    <SelectItem value="mathematics">Mathematics</SelectItem>
-                    <SelectItem value="physics">Physics</SelectItem>
-                    <SelectItem value="chemistry">Chemistry</SelectItem>
-                    <SelectItem value="biology">Biology</SelectItem>
-                    <SelectItem value="english">English</SelectItem>
-                    <SelectItem value="hindi">Hindi</SelectItem>
-                    <SelectItem value="sanskrit">Sanskrit</SelectItem>
-                    <SelectItem value="history">History</SelectItem>
-                    <SelectItem value="geography">Geography</SelectItem>
-                    <SelectItem value="economics">Economics</SelectItem>
-                  </SelectContent>
-                </Select>
+          <div className="max-w-6xl mx-auto">
+            {/* Search Input */}
+            <div className="mb-6">
+              <div className="relative max-w-2xl mx-auto">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search tutors by name, subject, or expertise..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-11 sm:h-12 text-sm sm:text-base"
+                />
               </div>
             </div>
+
+            {/* Multi-Select Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Subjects/Skills Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Subjects/Skills</label>
+                <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                  {[
+                    'mathematics', 'physics', 'chemistry', 'biology', 'english', 
+                    'hindi', 'sanskrit', 'history', 'geography', 'economics',
+                    'computer-science', 'art', 'music'
+                  ].map((subject) => (
+                    <label key={subject} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedSubjects.includes(subject)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedSubjects(prev => [...prev, subject]);
+                          } else {
+                            setSelectedSubjects(prev => prev.filter(s => s !== subject));
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="capitalize">{subject.replace('-', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedSubjects.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedSubjects.map((subject) => (
+                      <Badge key={subject} variant="secondary" className="text-xs">
+                        {subject.replace('-', ' ')}
+                        <button
+                          onClick={() => setSelectedSubjects(prev => prev.filter(s => s !== subject))}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Mode</label>
+                <div className="space-y-2 border rounded-md p-2">
+                  {['online', 'offline', 'hybrid'].map((mode) => (
+                    <label key={mode} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedModes.includes(mode)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedModes(prev => [...prev, mode]);
+                          } else {
+                            setSelectedModes(prev => prev.filter(m => m !== mode));
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="capitalize">{mode}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedModes.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedModes.map((mode) => (
+                      <Badge key={mode} variant="secondary" className="text-xs">
+                        {mode}
+                        <button
+                          onClick={() => setSelectedModes(prev => prev.filter(m => m !== mode))}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Gender Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Gender</label>
+                <div className="space-y-2 border rounded-md p-2">
+                  {['male', 'female', 'other'].map((gender) => (
+                    <label key={gender} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedGenders.includes(gender)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedGenders(prev => [...prev, gender]);
+                          } else {
+                            setSelectedGenders(prev => prev.filter(g => g !== gender));
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="capitalize">{gender}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedGenders.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedGenders.map((gender) => (
+                      <Badge key={gender} variant="secondary" className="text-xs">
+                        {gender}
+                        <button
+                          onClick={() => setSelectedGenders(prev => prev.filter(g => g !== gender))}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Radius Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Radius</label>
+                <div className="space-y-2 border rounded-md p-2">
+                  {['0-5', '5-10', '10-20', '20-50', '50+'].map((radius) => (
+                    <label key={radius} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedRadius.includes(radius)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRadius(prev => [...prev, radius]);
+                          } else {
+                            setSelectedRadius(prev => prev.filter(r => r !== radius));
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <span>{radius} km</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedRadius.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedRadius.map((radius) => (
+                      <Badge key={radius} variant="secondary" className="text-xs">
+                        {radius} km
+                        <button
+                          onClick={() => setSelectedRadius(prev => prev.filter(r => r !== radius))}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Clear All Filters Button */}
+            {(selectedSubjects.length > 0 || selectedModes.length > 0 || selectedGenders.length > 0 || selectedRadius.length > 0) && (
+              <div className="mt-4 text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedSubjects([]);
+                    setSelectedModes([]);
+                    setSelectedGenders([]);
+                    setSelectedRadius([]);
+                  }}
+                  className="text-xs"
+                >
+                  Clear All Filters
+                </Button>
+              </div>
+            )}
             
             {/* Search Results Info */}
             <div className="mt-3 sm:mt-4 text-center">
               <p className="text-sm sm:text-base text-muted-foreground">
-                {searchTerm || selectedSubject !== "all" ? (
+                {searchTerm || selectedSubjects.length > 0 || selectedModes.length > 0 || selectedGenders.length > 0 || selectedRadius.length > 0 ? (
                   <>Showing {filteredTutors.length} of {tutors.length} tutors</>
                 ) : (
                   <>All {tutors.length} tutors available</>

@@ -47,7 +47,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-16 sm:pt-20 pb-20 sm:pb-32">
         {/* Background Elements */}
@@ -55,7 +55,7 @@ export default function Home() {
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-accent/10 to-primary/10 rounded-full blur-3xl"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             <div className="space-y-6 sm:space-y-8 text-center lg:text-left">
@@ -64,7 +64,7 @@ export default function Home() {
                 <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
                 Revolutionizing Education
               </div>
-              
+
               <div className="space-y-4 sm:space-y-6">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold leading-tight tracking-tight">
                   Connect, Learn,{" "}
@@ -76,7 +76,7 @@ export default function Home() {
                   Connect with expert tutors and leading institutions for personalized learning experiences that unlock your full potential.
                 </p>
               </div>
-              
+
               {/* Benefits */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6">
                 {benefits.map((benefit, index) => (
@@ -88,13 +88,13 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="space-y-3 sm:space-y-4">
                 {/* Primary CTA */}
                 <div className="flex justify-center lg:justify-start">
                   <Link to="/signup">
-                    <Button 
-                      size="lg" 
+                    <Button
+                      size="lg"
                       className="bg-gradient-primary shadow-medium hover:shadow-strong hover:scale-105 transition-all duration-300 text-base sm:text-lg px-8 sm:px-12 py-3 sm:py-4 h-auto rounded-xl w-full sm:w-auto"
                     >
                       Start Learning Today
@@ -102,12 +102,12 @@ export default function Home() {
                     </Button>
                   </Link>
                 </div>
-                
+
                 {/* Secondary CTAs */}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                   <Link to="/tutors">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="lg"
                       className="border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:scale-105 transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto rounded-xl w-full sm:w-auto"
                     >
@@ -115,8 +115,8 @@ export default function Home() {
                     </Button>
                   </Link>
                   <Link to="/institutions">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="lg"
                       className="border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:scale-105 transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3 h-auto rounded-xl w-full sm:w-auto"
                     >
@@ -133,7 +133,7 @@ export default function Home() {
                   <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
                   <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
                   <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
-                  <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
                   <span className="text-xs sm:text-sm text-muted-foreground ml-2">Trusted by learners worldwide</span>
                 </div>
               </div>
@@ -141,9 +141,9 @@ export default function Home() {
 
             <div className="relative order-first lg:order-last">
               <div className="relative z-10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-500">
-                <img 
-                  src={heroImage} 
-                  alt="Students learning together" 
+                <img
+                  src={heroImage}
+                  alt="Students learning together"
                   className="w-full h-auto object-cover"
                 />
                 {/* Overlay */}
@@ -177,7 +177,7 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              We're building the future of education by connecting passionate learners with expert educators, 
+              We're building the future of education by connecting passionate learners with expert educators,
               creating personalized learning experiences that drive real results.
             </p>
           </div>
@@ -188,7 +188,6 @@ export default function Home() {
                 <CardContent className="p-6 sm:p-8 text-center relative overflow-hidden">
                   {/* Background Pattern */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  
                   <div className="relative z-10">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-subtle rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                       {feature.icon}
@@ -220,7 +219,7 @@ export default function Home() {
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium mb-4 sm:mb-6">
@@ -231,13 +230,13 @@ export default function Home() {
               Transform Your Learning Journey Today
             </h2>
             <p className="text-base sm:text-lg md:text-xl opacity-90 max-w-2xl mx-auto leading-relaxed">
-              Join thousands of learners who have already discovered the power of personalized education 
+              Join thousands of learners who have already discovered the power of personalized education
               with LearnsConnect. Your future starts here.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
               <Link to="/signup-choice">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="secondary"
                   className="bg-background text-foreground hover:bg-background/90 hover:scale-105 shadow-medium text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 h-auto rounded-xl transition-all duration-300 w-full sm:w-auto"
                 >
@@ -246,8 +245,8 @@ export default function Home() {
                 </Button>
               </Link>
               <Link to="/how-it-works">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="outline"
                   className="border-2 border-white/50 text-white hover:bg-white hover:text-primary hover:scale-105 transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 h-auto rounded-xl bg-white/10 backdrop-blur-sm w-full sm:w-auto"
                 >
@@ -258,6 +257,17 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-background border-t border-border/50 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              © 2025 Ellen Information Technology Solutions Pvt. Ltd. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
