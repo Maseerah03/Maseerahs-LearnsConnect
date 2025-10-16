@@ -33,6 +33,7 @@ interface StudentFormData {
   city: string;
   area: string;
   primaryLanguage: string;
+  classType: string;
   termsAccepted: boolean;
 }
 
@@ -51,6 +52,7 @@ const initialFormData: StudentFormData = {
   city: "",
   area: "",
   primaryLanguage: "",
+  classType: "",
   termsAccepted: false,
 };
 
@@ -65,6 +67,12 @@ export default function StudentSignUp() {
   const educationLevels = [
     "Class 1-5", "Class 6-8", "Class 9-10", "Class 11-12",
     "Undergraduate", "Graduate", "Professional", "Other"
+  ];
+
+  const classTypes = [
+    "Online",
+    "Visit the Tutor/Institution", 
+    "Tutor Comes to My Place"
   ];
 
   const validateField = (field: keyof StudentFormData, value: any) => {
@@ -118,6 +126,14 @@ export default function StudentSignUp() {
           newErrors.confirmPassword = "Passwords don't match";
         } else {
           delete newErrors.confirmPassword;
+        }
+        break;
+        
+      case 'classType':
+        if (!value) {
+          newErrors.classType = 'Please select your preferred class type';
+        } else {
+          delete newErrors.classType;
         }
         break;
         
@@ -381,6 +397,26 @@ export default function StudentSignUp() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Preferred Class Type *</Label>
+                    <Select value={formData.classType} onValueChange={(value) => handleInputChange("classType", value)}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select your preferred class type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classTypes.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.classType && touchedFields.has('classType') && (
+                      <div className="flex items-center mt-1 text-destructive text-sm">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        {errors.classType}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">

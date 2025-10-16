@@ -156,7 +156,7 @@ export default function TutorSignUp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subjectSearchTerm, setSubjectSearchTerm] = useState("");
   const [customSubject, setCustomSubject] = useState("");
-  const totalSteps = 4;
+  const totalSteps = 5;
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -181,8 +181,8 @@ export default function TutorSignUp() {
       "IELTS", "TOEFL", "GRE", "GMAT", "SSC"
     ]
   };
-  const studentLevels = ["Primary", "Secondary", "Higher Secondary", "Graduate", "Professional"];
-  const curriculums = ["CBSE", "ICSE", "State Board", "IB", "Cambridge", "NIOS"];
+  const studentLevels = ["Grade (1–5)", "Grade (6–10)", "Grade (11–12th)", "Diploma", "Graduate", "Professional"];
+  const curriculums = ["CBSE", "ICSE", "State Board", "IB", "Cambridge", "NIOS", "Waldorf", "Edexcel", "Others"];
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const languages = ["English", "Hindi", "Bengali", "Tamil", "Telugu", "Marathi", "Gujarati"];
 
@@ -1192,13 +1192,12 @@ export default function TutorSignUp() {
           <div className="space-y-2">
             <Label htmlFor="individualFee">Individual Class Fee (per hour) * ₹</Label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="individualFee"
                 placeholder="Enter hourly rate"
                 value={formData.individualFee}
                 onChange={(e) => handleInputChange("individualFee", e.target.value)}
-                className="pl-10 h-12"
+                className="h-12"
                 required
               />
             </div>
@@ -1515,6 +1514,271 @@ export default function TutorSignUp() {
     </div>
   );
 
+  const renderStep5 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold mb-2">Review Your Profile</h2>
+        <p className="text-muted-foreground">Please review your details before final submission</p>
+      </div>
+
+      {/* Profile Preview */}
+      <div className="bg-white rounded-lg border p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Full Name:</span>
+              <p className="text-sm">{formData.fullName}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Email:</span>
+              <p className="text-sm">{formData.email}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Mobile:</span>
+              <p className="text-sm">{formData.mobileNumber}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Date of Birth:</span>
+              <p className="text-sm">{formData.dateOfBirth}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Gender:</span>
+              <p className="text-sm">{formData.gender}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">City:</span>
+              <p className="text-sm">{formData.city}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Area:</span>
+              <p className="text-sm">{formData.area}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Pin Code:</span>
+              <p className="text-sm">{formData.pinCode}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Education */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Education</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Highest Qualification:</span>
+              <p className="text-sm">{formData.highestQualification}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">University:</span>
+              <p className="text-sm">{formData.universityName}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Year of Passing:</span>
+              <p className="text-sm">{formData.yearOfPassing}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Percentage:</span>
+              <p className="text-sm">{formData.percentage}%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Teaching Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Teaching Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Experience:</span>
+              <p className="text-sm">{formData.teachingExperience} years</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Currently Teaching:</span>
+              <p className="text-sm">{formData.currentlyTeaching}</p>
+            </div>
+            <div className="md:col-span-2">
+              <span className="text-sm font-medium text-muted-foreground">Previous Experience:</span>
+              <p className="text-sm">{formData.previousExperience}</p>
+            </div>
+            <div className="md:col-span-2">
+              <span className="text-sm font-medium text-muted-foreground">Current Teaching Place:</span>
+              <p className="text-sm">{formData.currentTeachingPlace}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Subjects & Levels */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Subjects & Levels</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Subjects:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.subjects.map((subject, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                    {subject}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Student Levels:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.studentLevels.map((level, index) => (
+                  <span key={index} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                    {level}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Curriculum:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.curriculum.map((curriculum, index) => (
+                  <span key={index} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
+                    {curriculum}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Languages:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.languages.map((language, index) => (
+                  <span key={index} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                    {language}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Service Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Service Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Class Type:</span>
+              <p className="text-sm">{formData.classType}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Max Travel Distance:</span>
+              <p className="text-sm">{formData.maxTravelDistance} km</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Class Size:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.classSize.map((size, index) => (
+                  <span key={index} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                    {size}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Available Days:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.availableDays.map((day, index) => (
+                  <span key={index} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                    {day}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fee Structure */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Fee Structure</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Individual Class Fee:</span>
+              <p className="text-sm">₹{formData.individualFee}/hour</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Group Class Fee:</span>
+              <p className="text-sm">₹{formData.groupFee}/hour</p>
+            </div>
+            {formData.classType === 'Home Tuition' && (
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Home Visit Fee:</span>
+                <p className="text-sm">₹{formData.homeTuitionFee}/hour</p>
+              </div>
+            )}
+            {formData.classType === 'Tutor Home' && (
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Tutor Home Fee:</span>
+                <p className="text-sm">₹{formData.homeTuitionFee}/hour</p>
+              </div>
+            )}
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Demo Class Fee:</span>
+              <p className="text-sm">₹{formData.demoClassFee}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Profile Information</h3>
+          <div className="space-y-3">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Profile Headline:</span>
+              <p className="text-sm mt-1">{formData.profileHeadline}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Teaching Methodology:</span>
+              <p className="text-sm mt-1">{formData.teachingMethodology}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2">Additional Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Laptop Available:</span>
+              <p className="text-sm">{formData.laptopAvailable}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Internet Available:</span>
+              <p className="text-sm">{formData.internetAvailable}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Webcam Available:</span>
+              <p className="text-sm">{formData.webcamAvailable}</p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Background Verification:</span>
+              <p className="text-sm">{formData.backgroundVerification ? 'Agreed' : 'Not Agreed'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Confirmation Message */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600 text-sm font-bold">!</span>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-blue-900">Ready to Submit?</h4>
+            <p className="text-sm text-blue-700 mt-1">
+              Please review all your information carefully. Once submitted, you'll receive an email to verify your account and complete the registration process.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -1541,6 +1805,7 @@ export default function TutorSignUp() {
                 {currentStep === 2 && renderStep2()}
                 {currentStep === 3 && renderStep3()}
                 {currentStep === 4 && renderStep4()}
+                {currentStep === 5 && renderStep5()}
               </div>
 
               <div className="flex justify-between">
@@ -1554,7 +1819,7 @@ export default function TutorSignUp() {
                   <span>Previous</span>
                 </Button>
 
-                {currentStep < totalSteps ? (
+                {currentStep < 4 ? (
                   <Button
                     onClick={handleNext}
                     disabled={!validateStep(currentStep)}
@@ -1563,10 +1828,19 @@ export default function TutorSignUp() {
                     <span>Next</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
+                ) : currentStep === 4 ? (
+                  <Button
+                    onClick={handleNext}
+                    disabled={!validateStep(currentStep)}
+                    className="flex items-center space-x-2"
+                  >
+                    <span>Review Profile</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 ) : (
                   <Button
                     onClick={handleSubmit}
-                    disabled={!validateStep(4) || isSubmitting}
+                    disabled={isSubmitting}
                     className="flex items-center space-x-2"
                   >
                     {isSubmitting ? (
@@ -1576,7 +1850,7 @@ export default function TutorSignUp() {
                       </>
                     ) : (
                       <>
-                        <span>Submit for Review</span>
+                        <span>Create Account</span>
                         <ArrowRight className="h-4 w-4" />
                       </>
                     )}
